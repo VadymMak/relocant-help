@@ -1,0 +1,33 @@
+{
+  "nav": {
+    "home": "Home",
+    "articles": "Articles",
+    "catalog": "Specialists",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "home": {
+    "title": "Help for Relocants in Europe",
+    "subtitle": "Relevant information for Ukrainian and Russian-speaking migrants"
+  },
+  "articles": {
+    "title": "Articles",
+    "empty": "No articles yet"
+  },
+  "catalog": {
+    "title": "Specialists",
+    "empty": "No specialists yet"
+  },
+  "about": {
+    "title": "About Us"
+  },
+  "contact": {
+    "title": "Contact"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "articles": "Article Moderation",
+    "approve": "Approve",
+    "reject": "Reject"
+  }
+}

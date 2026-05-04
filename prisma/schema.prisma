@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Specialist {
+  id            String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  name          String
+  role          String
+  country       String
+  city          String
+  languages     String[]
+  tags          String[]
+  priceFrom     Int?      @map("price_from")
+  rating        Decimal?  @db.Decimal
+  reviewCount   Int?      @default(0) @map("review_count")
+  licenseNumber String?   @map("license_number")
+  verified      Boolean?  @default(false)
+  bioUk         String?   @map("bio_uk")
+  bioRu         String?   @map("bio_ru")
+  photoUrl      String?   @map("photo_url")
+  email         String?
+  active        Boolean?  @default(true)
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("Specialist")
+}
+
+model Request {
+  id           String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  userName     String    @map("user_name")
+  userEmail    String    @map("user_email")
+  country      String
+  problemType  String    @map("problem_type")
+  description  String?
+  specialistId String?   @map("specialist_id")
+  status       String?   @default("pending")
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("Request")
+}
+
+model CrawledArticle {
+  id               String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  sourceId         String    @map("source_id")
+  url              String    @unique
+  originalTitle    String    @map("original_title")
+  originalContent  String?   @map("original_content")
+  originalLanguage String    @map("original_language")
+  titleUk          String?   @map("title_uk")
+  titleRu          String?   @map("title_ru")
+  summaryUk        String?   @map("summary_uk")
+  summaryRu        String?   @map("summary_ru")
+  fullTextUk       String?   @map("full_text_uk")
+  fullTextRu       String?   @map("full_text_ru")
+  tags             String[]
+  relevanceScore   Int?      @default(0) @map("relevance_score")
+  country          String
+  status           String?   @default("pending_review")
+  publishedAt      DateTime? @map("published_at") @db.Timestamp(6)
+  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("CrawledArticle")
+}
+
+model CrawlerLog {
+  id               String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  sourceId         String    @map("source_id")
+  status           String
+  articlesFound    Int?      @default(0) @map("articles_found")
+  articlesRelevant Int?      @default(0) @map("articles_relevant")
+  error            String?
+  runAt            DateTime? @default(now()) @map("run_at") @db.Timestamp(6)
+
+  @@map("CrawlerLog")
+}
