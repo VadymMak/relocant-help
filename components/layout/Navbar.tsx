@@ -1,6 +1,7 @@
 'use client'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/navigation'
+import { features } from '@/lib/features'
 
 export default function Navbar() {
   const t = useTranslations('nav')
@@ -59,12 +60,12 @@ export default function Navbar() {
         </Link>
 
         <div style={{ display: 'flex', gap: 24, flex: 1, fontSize: 14 }}>
-          {[
+          {([
             { href: '/articles', label: t('articles') },
-            { href: '/catalog', label: t('catalog') },
+            features.specialists ? { href: '/catalog', label: t('catalog') } : null,
             { href: '/about', label: t('about') },
             { href: '/contact', label: t('contact') },
-          ].map(({ href, label }) => (
+          ].filter(Boolean) as { href: string; label: string }[]).map(({ href, label }) => (
             <Link key={href} href={href as '/articles' | '/catalog' | '/about' | '/contact'} style={{
               color: 'rgba(255,255,255,0.85)',
               textDecoration: 'none',

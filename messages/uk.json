@@ -43,7 +43,17 @@
   },
   "articles": {
     "title": "Статті",
-    "empty": "Статей поки немає"
+    "subtitle": "Офіційні зміни в законодавстві Європи — перекладені зрозумілою мовою",
+    "empty": "Статей поки немає",
+    "filterAll": "Всі",
+    "readMore": "Читати →",
+    "backToList": "← Статті",
+    "source": "Джерело",
+    "originalLink": "Читати оригінал →",
+    "relatedTitle": "Схожі статті",
+    "published": "Опубліковано",
+    "paginationPrev": "← Назад",
+    "paginationNext": "Далі →"
   },
   "catalog": {
     "title": "Спеціалісти",

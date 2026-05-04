@@ -43,7 +43,17 @@
   },
   "articles": {
     "title": "Статьи",
-    "empty": "Статей пока нет"
+    "subtitle": "Официальные изменения в законодательстве Европы — переведены понятным языком",
+    "empty": "Статей пока нет",
+    "filterAll": "Все",
+    "readMore": "Читать →",
+    "backToList": "← Статьи",
+    "source": "Источник",
+    "originalLink": "Читать оригинал →",
+    "relatedTitle": "Похожие статьи",
+    "published": "Опубликовано",
+    "paginationPrev": "← Назад",
+    "paginationNext": "Далее →"
   },
   "catalog": {
     "title": "Специалисты",
