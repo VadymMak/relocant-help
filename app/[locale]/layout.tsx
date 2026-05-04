@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
+import '@/app/globals.css'
+
+const inter = Inter({ subsets: ['latin', 'cyrillic'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Relocant Help',
@@ -26,7 +30,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body>
+      <body className={inter.className} style={{ background: 'var(--rh-bg)', margin: 0 }}>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
