@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Admin · relocant.help</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { background: var(--rh-bg); margin: 0; }
+
+  /* Sidebar layout */
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .sidebar {
+    background: var(--rh-navy);
+    color: white; padding: 24px 16px;
+    position: sticky; top: 0; height: 100vh;
+    overflow: auto;
+  }
+  .sb-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 16px; color: white;
+    padding: 0 8px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 16px;
+  }
+  .sb-logo .mark {
+    width: 26px; height: 26px; background: var(--rh-teal);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px;
+  }
+  .sb-section {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.4); padding: 16px 8px 8px; font-weight: 600;
+  }
+  .sb-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px; border-radius: 8px;
+    color: rgba(255,255,255,0.75); font-size: 14px; font-weight: 500;
+    text-decoration: none; cursor: pointer;
+  }
+  .sb-link:hover { background: rgba(255,255,255,0.06); color: white; }
+  .sb-link.active { background: rgba(24,95,165,0.4); color: white; }
+  .sb-link .badge {
+    margin-left: auto; background: var(--rh-teal); color: white;
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  }
+  .sb-link svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.8; }
+
+  /* Main */
+  .main { padding: 32px 40px; max-width: 1400px; }
+  .top-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .top-row h1 { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.02em; color: var(--rh-navy); }
+  .top-row p { font-size: 14px; color: var(--rh-fg-2); margin: 4px 0 0; }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .top-actions .admin-search {
+    border: 1px solid var(--rh-border); border-radius: 10px;
+    background: white; padding: 8px 12px;
+    width: 280px; font: 14px var(--rh-font);
+  }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .metric {
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg); padding: 20px;
+  }
+  .metric-label {
+    font-size: 13px; color: var(--rh-fg-2); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .metric-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--rh-blue-100); color: var(--rh-blue-700);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .metric-icon.teal { background: var(--rh-teal-100); color: var(--rh-teal-700); }
+  .metric-icon.warn { background: var(--rh-warning-100); color: var(--rh-warning); }
+  .metric-icon.danger { background: var(--rh-danger-100); color: var(--rh-danger); }
+  .metric-num {
+    font-size: 32px; font-weight: 800; color: var(--rh-navy);
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .metric-trend {
+    margin-top: 8px; font-size: 12px;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-weight: 600;
+  }
+  .trend-up { color: var(--rh-teal-700); }
+  .trend-dn { color: var(--rh-danger); }
+  .metric-trend small { color: var(--rh-fg-3); font-weight: 400; margin-left: 4px; }
+
+  /* Table card */
+  .table-card {
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg);
+    overflow: hidden;
+  }
+  .table-head {
+    padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--rh-border);
+  }
+  .table-head h2 { margin: 0; font-size: 18px; font-weight: 700; color: var(--rh-navy); }
+  .table-head p { margin: 2px 0 0; font-size: 13px; color: var(--rh-fg-2); }
+  .table-filters { display: flex; gap: 8px; }
+  .filter-pill {
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--rh-border); background: white;
+    font: 600 13px var(--rh-font); color: var(--rh-fg-2);
+    cursor: pointer;
+  }
+  .filter-pill.active { background: var(--rh-navy); color: white; border-color: var(--rh-navy); }
+  .filter-pill .num { margin-left: 6px; opacity: 0.7; font-weight: 500; }
+
+  table {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+  }
+  thead th {
+    text-align: left; padding: 12px 24px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    color: var(--rh-fg-3); letter-spacing: 0.06em;
+    background: var(--rh-bg);
+    border-bottom: 1px solid var(--rh-border);
+  }
+  tbody td {
+    padding: 16px 24px; border-bottom: 1px solid var(--rh-border);
+    vertical-align: top;
+  }
+  tbody tr:hover { background: var(--rh-bg); }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .req-id { font-family: var(--rh-font-mono); font-size: 12px; color: var(--rh-fg-3); }
+  .req-user {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .req-av {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 12px;
+  }
+  .av-1 { background: linear-gradient(135deg, #185FA5, #0A3A66); }
+  .av-2 { background: linear-gradient(135deg, #1D9E75, #157A5A); }
+  .av-3 { background: linear-gradient(135deg, #D97706, #9A4D00); }
+  .av-4 { background: linear-gradient(135deg, #6366F1, #4338CA); }
+  .av-5 { background: linear-gradient(135deg, #EC4899, #BE185D); }
+  .av-6 { background: linear-gradient(135deg, #0EA5E9, #0369A1); }
+
+  .req-name { font-weight: 600; color: var(--rh-fg); }
+  .req-email { font-size: 12px; color: var(--rh-fg-3); }
+  .req-message {
+    font-size: 13px; color: var(--rh-fg-2); line-height: 1.5;
+    max-width: 280px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .req-message strong { color: var(--rh-fg); font-weight: 600; }
+
+  /* AI classification */
+  .ai-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, #F1ECFF, #E0E9FE);
+    border: 1px solid #C9B8F2;
+    color: #5B2BAD; font-size: 12px; font-weight: 600;
+    padding: 4px 10px; border-radius: 8px;
+  }
+  .ai-tag .sparkle {
+    width: 12px; height: 12px;
+    color: #7C3AED;
+  }
+  .ai-confidence {
+    font-size: 11px; color: var(--rh-fg-3);
+    margin-top: 4px; font-family: var(--rh-font-mono);
+  }
+  .ai-secondary { font-size: 11px; color: var(--rh-fg-3); margin-top: 4px; }
+
+  .country-flag { font-size: 16px; margin-right: 4px; }
+  .urgency {
+    font-size: 12px; font-weight: 600;
+    padding: 3px 8px; border-radius: 6px;
+    display: inline-block;
+  }
+  .urg-high { background: var(--rh-danger-100); color: var(--rh-danger); }
+  .urg-med { background: var(--rh-warning-100); color: var(--rh-warning); }
+  .urg-low { background: var(--rh-bg-alt); color: var(--rh-fg-2); }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .status-new { background: var(--rh-blue-100); color: var(--rh-blue-700); }
+  .status-matched { background: var(--rh-teal-100); color: var(--rh-teal-700); }
+  .status-pending { background: var(--rh-warning-100); color: var(--rh-warning); }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .row-time { font-size: 12px; color: var(--rh-fg-3); }
+  .match-btn {
+    background: var(--rh-blue); color: white; border: 0;
+    padding: 8px 14px; border-radius: 8px;
+    font: 600 13px var(--rh-font);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .match-btn:hover { background: var(--rh-blue-700); }
+  .match-btn.matched {
+    background: var(--rh-teal-100); color: var(--rh-teal-700);
+    cursor: default;
+  }
+  .match-btn svg { width: 14px; height: 14px; }
+
+  /* Right rail content */
+  .two-col { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+  .side-card {
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg); padding: 20px;
+  }
+  .side-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px; color: var(--rh-navy); }
+  .side-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-top: 1px solid var(--rh-border);
+    font-size: 13px;
+  }
+  .side-row:first-of-type { border-top: 0; }
+  .side-row .label { flex: 1; color: var(--rh-fg-2); }
+  .side-row .val { font-weight: 700; color: var(--rh-fg); }
+
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .main { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <span class="mark">✓</span>
+      relocant.help
+    </div>
+
+    <div class="sb-section">Operations</div>
+    <a class="sb-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v6H3zM3 11h18v10H3z"/></svg>
+      Dashboard
+    </a>
+    <a class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Requests
+      <span class="badge">12</span>
+    </a>
+    <a class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Specialists
+    </a>
+    <a class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Bookings
+    </a>
+
+    <div class="sb-section">Network</div>
+    <a class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Verifications
+    </a>
+    <a class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      Reviews
+    </a>
+
+    <div class="sb-section">Settings</div>
+    <a class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Configuration
+    </a>
+  </aside>
+
+  <main class="main">
+    <div class="top-row">
+      <div>
+        <h1>Operations dashboard</h1>
+        <p>12 new requests · 3 awaiting match · last sync 2 min ago</p>
+      </div>
+      <div class="top-actions">
+        <input class="admin-search" placeholder="Search requests, specialists, IDs…" />
+        <button class="rh-btn rh-btn-secondary rh-btn-sm">Export CSV</button>
+        <button class="rh-btn rh-btn-primary rh-btn-sm">+ New specialist</button>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">
+          <span class="metric-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+          New requests · 7 days
+        </div>
+        <div class="metric-num">186</div>
+        <div class="metric-trend trend-up">↑ 18% <small>vs prev. week</small></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          <span class="metric-icon teal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+          Match rate
+        </div>
+        <div class="metric-num">94%</div>
+        <div class="metric-trend trend-up">↑ 2.1pt <small>vs prev. week</small></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          <span class="metric-icon warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+          Avg. time to match
+        </div>
+        <div class="metric-num">11h</div>
+        <div class="metric-trend trend-dn">↓ 3h <small>faster</small></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          <span class="metric-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span>
+          Booking GMV · MTD
+        </div>
+        <div class="metric-num">€48.2k</div>
+        <div class="metric-trend trend-up">↑ 24% <small>vs prev. month</small></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Requests table -->
+      <div class="table-card">
+        <div class="table-head">
+          <div>
+            <h2>Incoming requests</h2>
+            <p>Classified by Claude AI · review and assign specialists</p>
+          </div>
+          <div class="table-filters">
+            <button class="filter-pill active">New <span class="num">12</span></button>
+            <button class="filter-pill">In progress <span class="num">8</span></button>
+            <button class="filter-pill">Matched <span class="num">23</span></button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 70px;">ID</th>
+              <th>Relocant</th>
+              <th>Message</th>
+              <th>Country</th>
+              <th>AI classification</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="req-id">#R-4128</span><div class="row-time" style="margin-top:4px;">2 min ago</div></td>
+              <td>
+                <div class="req-user">
+                  <div class="req-av av-1">КВ</div>
+                  <div>
+                    <div class="req-name">Kateryna V.</div>
+                    <div class="req-email">k.volkova@gmail.com</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="req-message">"Got Blue Card refusal last week. Need to file <strong>Widerspruch</strong> within 30 days. Speak UA/RU. Berlin-based."</div>
+              </td>
+              <td><span class="country-flag">🇩🇪</span>Germany</td>
+              <td>
+                <span class="ai-tag"><svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9h9l-7.5 5.5L19 24l-7-5-7 5 2.5-9.5L0 9h9z"/></svg>Visa appeal</span>
+                <div class="ai-secondary">Secondary: Blue Card</div>
+                <div class="ai-confidence">conf. 0.94 · <span class="urgency urg-high">High urgency</span></div>
+              </td>
+              <td><span class="status-pill status-new"><span class="dot"></span>New</span></td>
+              <td><button class="match-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Match</button></td>
+            </tr>
+
+            <tr>
+              <td><span class="req-id">#R-4127</span><div class="row-time" style="margin-top:4px;">28 min ago</div></td>
+              <td>
+                <div class="req-user">
+                  <div class="req-av av-2">ДВ</div>
+                  <div>
+                    <div class="req-name">Дмитрий В.</div>
+                    <div class="req-email">d.voloshyn@proton.me</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="req-message">"Need to register IT B2B activity in Poland. PIT/CIT advice + VAT EU. Working RU only."</div>
+              </td>
+              <td><span class="country-flag">🇵🇱</span>Poland</td>
+              <td>
+                <span class="ai-tag"><svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9h9l-7.5 5.5L19 24l-7-5-7 5 2.5-9.5L0 9h9z"/></svg>Tax setup</span>
+                <div class="ai-secondary">Secondary: B2B contracts</div>
+                <div class="ai-confidence">conf. 0.91 · <span class="urgency urg-med">Medium</span></div>
+              </td>
+              <td><span class="status-pill status-new"><span class="dot"></span>New</span></td>
+              <td><button class="match-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Match</button></td>
+            </tr>
+
+            <tr>
+              <td><span class="req-id">#R-4126</span><div class="row-time" style="margin-top:4px;">1 hour ago</div></td>
+              <td>
+                <div class="req-user">
+                  <div class="req-av av-4">ОТ</div>
+                  <div>
+                    <div class="req-name">Olena T.</div>
+                    <div class="req-email">olena.tk@me.com</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="req-message">"Setting up s.r.o. in Prague for SaaS startup. 3 founders, mix of UA and EU citizens. Need contracts and trade licence guidance."</div>
+              </td>
+              <td><span class="country-flag">🇨🇿</span>Czechia</td>
+              <td>
+                <span class="ai-tag"><svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9h9l-7.5 5.5L19 24l-7-5-7 5 2.5-9.5L0 9h9z"/></svg>Company setup</span>
+                <div class="ai-secondary">Secondary: Contracts</div>
+                <div class="ai-confidence">conf. 0.97 · <span class="urgency urg-low">Low</span></div>
+              </td>
+              <td><span class="status-pill status-new"><span class="dot"></span>New</span></td>
+              <td><button class="match-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Match</button></td>
+            </tr>
+
+            <tr>
+              <td><span class="req-id">#R-4125</span><div class="row-time" style="margin-top:4px;">3 hours ago</div></td>
+              <td>
+                <div class="req-user">
+                  <div class="req-av av-3">МР</div>
+                  <div>
+                    <div class="req-name">Maria R.</div>
+                    <div class="req-email">m.reinhardt@web.de</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="req-message">"Divorce from RU citizen, two children with EU passports. Custody concerns. Vienna."</div>
+              </td>
+              <td><span class="country-flag">🇦🇹</span>Austria</td>
+              <td>
+                <span class="ai-tag"><svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9h9l-7.5 5.5L19 24l-7-5-7 5 2.5-9.5L0 9h9z"/></svg>Family law</span>
+                <div class="ai-secondary">Secondary: Custody</div>
+                <div class="ai-confidence">conf. 0.89 · <span class="urgency urg-high">High urgency</span></div>
+              </td>
+              <td><span class="status-pill status-pending"><span class="dot"></span>Reviewing</span></td>
+              <td><button class="match-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Match</button></td>
+            </tr>
+
+            <tr>
+              <td><span class="req-id">#R-4124</span><div class="row-time" style="margin-top:4px;">5 hours ago</div></td>
+              <td>
+                <div class="req-user">
+                  <div class="req-av av-5">ИП</div>
+                  <div>
+                    <div class="req-name">Iryna P.</div>
+                    <div class="req-email">i.petrenko@ukr.net</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="req-message">"3 years on Aufenthaltserlaubnis, applying for Niederlassungserlaubnis. Need help with C1 language requirements."</div>
+              </td>
+              <td><span class="country-flag">🇩🇪</span>Germany</td>
+              <td>
+                <span class="ai-tag"><svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9h9l-7.5 5.5L19 24l-7-5-7 5 2.5-9.5L0 9h9z"/></svg>Permanent residence</span>
+                <div class="ai-secondary">Secondary: Citizenship</div>
+                <div class="ai-confidence">conf. 0.96 · <span class="urgency urg-low">Low</span></div>
+              </td>
+              <td><span class="status-pill status-matched"><span class="dot"></span>Matched</span></td>
+              <td><button class="match-btn matched">✓ Anna K.</button></td>
+            </tr>
+
+            <tr>
+              <td><span class="req-id">#R-4123</span><div class="row-time" style="margin-top:4px;">8 hours ago</div></td>
+              <td>
+                <div class="req-user">
+                  <div class="req-av av-6">СГ</div>
+                  <div>
+                    <div class="req-name">Sergiy H.</div>
+                    <div class="req-email">s.hrynkiv@gmail.com</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="req-message">"Freiberufler in Hamburg. ELSTER setup totally lost. Need someone bilingual UA/DE who can take over filings."</div>
+              </td>
+              <td><span class="country-flag">🇩🇪</span>Germany</td>
+              <td>
+                <span class="ai-tag"><svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9h9l-7.5 5.5L19 24l-7-5-7 5 2.5-9.5L0 9h9z"/></svg>Freelance tax</span>
+                <div class="ai-secondary">Secondary: ELSTER</div>
+                <div class="ai-confidence">conf. 0.93 · <span class="urgency urg-med">Medium</span></div>
+              </td>
+              <td><span class="status-pill status-matched"><span class="dot"></span>Matched</span></td>
+              <td><button class="match-btn matched">✓ Sergiy H.</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right rail -->
+      <div>
+        <div class="side-card" style="margin-bottom: 16px;">
+          <h3>This week</h3>
+          <div class="side-row"><span class="label">New requests</span><span class="val">42</span></div>
+          <div class="side-row"><span class="label">Matched</span><span class="val">39</span></div>
+          <div class="side-row"><span class="label">Bookings completed</span><span class="val">28</span></div>
+          <div class="side-row"><span class="label">Avg rating</span><span class="val">4.87 ★</span></div>
+          <div class="side-row"><span class="label">Net new specialists</span><span class="val">+2</span></div>
+        </div>
+
+        <div class="side-card">
+          <h3>AI classifications · 30d</h3>
+          <div class="side-row"><span class="label">Immigration</span><span class="val">38%</span></div>
+          <div class="side-row"><span class="label">Tax / Accounting</span><span class="val">29%</span></div>
+          <div class="side-row"><span class="label">Company setup</span><span class="val">14%</span></div>
+          <div class="side-row"><span class="label">Family law</span><span class="val">9%</span></div>
+          <div class="side-row"><span class="label">Other</span><span class="val">10%</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

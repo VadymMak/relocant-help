@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Specialists — relocant.help</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { background: var(--rh-bg); }
+
+  /* Re-use minimal nav from landing */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(4, 44, 83, 0.98); backdrop-filter: blur(8px);
+    color: white; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .nav-inner {
+    max-width: 1280px; margin: 0 auto;
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 32px;
+  }
+  .logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; color: white; text-decoration: none; }
+  .logo-mark { width: 28px; height: 28px; background: var(--rh-teal); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 14px; }
+  .nav-links { display: flex; gap: 24px; flex: 1; font-size: 14px; }
+  .nav-links a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; }
+  .nav-links a.active { color: white; position: relative; }
+  .nav-links a.active::after { content:''; position:absolute; left:0; right:0; bottom:-22px; height:2px; background: var(--rh-teal); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .lang-switch { display: flex; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--rh-radius-pill); padding: 3px; }
+  .lang-switch button { background: transparent; border: 0; color: rgba(255,255,255,0.7); font: 600 12px var(--rh-font); padding: 5px 12px; border-radius: var(--rh-radius-pill); cursor: pointer; }
+  .lang-switch button.active { background: white; color: var(--rh-navy); }
+
+  /* Page header */
+  .page-head {
+    background: var(--rh-navy);
+    color: white; padding: 48px 24px 80px;
+  }
+  .page-head-inner { max-width: 1280px; margin: 0 auto; }
+  .page-head h1 { font-size: 36px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .page-head p { color: rgba(255,255,255,0.7); margin: 0 0 32px; font-size: 16px; }
+  .breadcrumb {
+    font-size: 13px; color: rgba(255,255,255,0.55);
+    margin-bottom: 16px;
+  }
+  .breadcrumb a { color: rgba(255,255,255,0.7); text-decoration: none; }
+
+  /* Search bar */
+  .search-bar {
+    background: white; border-radius: var(--rh-radius-lg);
+    box-shadow: var(--rh-shadow-md);
+    padding: 8px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 4px;
+  }
+  .sb-field { padding: 12px 16px; border-radius: 12px; cursor: pointer; }
+  .sb-field:hover { background: var(--rh-bg); }
+  .sb-field + .sb-field { border-left: 1px solid var(--rh-border); }
+  .sb-field label { display:block; font-size: 11px; font-weight: 700; color: var(--rh-fg-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .sb-field .value { font-size: 15px; font-weight: 600; color: var(--rh-fg); margin-top: 2px; }
+  .sb-btn { background: var(--rh-blue); color: white; border: 0; padding: 0 28px; border-radius: 12px; font: 600 15px var(--rh-font); cursor: pointer; }
+  .sb-btn:hover { background: var(--rh-blue-700); }
+
+  /* Layout */
+  .catalog {
+    max-width: 1280px; margin: -40px auto 80px;
+    padding: 0 24px;
+    display: grid; grid-template-columns: 280px 1fr;
+    gap: 32px;
+    position: relative; z-index: 2;
+  }
+
+  /* Filters sidebar */
+  .filters {
+    background: white;
+    border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg);
+    padding: 24px;
+    align-self: flex-start;
+    position: sticky; top: 88px;
+    box-shadow: var(--rh-shadow-xs);
+  }
+  .filters-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .filters-head h3 { margin: 0; font-size: 16px; font-weight: 700; }
+  .filters-head a { font-size: 13px; color: var(--rh-blue); text-decoration: none; font-weight: 600; }
+  .filter-group { padding: 16px 0; border-top: 1px solid var(--rh-border); }
+  .filter-group:first-of-type { border-top: 0; padding-top: 0; }
+  .filter-group h4 {
+    font-size: 13px; font-weight: 700; color: var(--rh-fg);
+    margin: 0 0 12px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .check-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0;
+    font-size: 14px; color: var(--rh-fg);
+    cursor: pointer;
+  }
+  .check-row input { margin: 0; accent-color: var(--rh-blue); width: 16px; height: 16px; }
+  .check-row .count { margin-left: auto; color: var(--rh-fg-3); font-size: 12px; }
+  .price-range {
+    display: flex; gap: 8px;
+  }
+  .price-range input {
+    width: 100%; padding: 8px 10px; font-size: 13px;
+    border: 1px solid var(--rh-border); border-radius: 8px;
+    font-family: var(--rh-font);
+  }
+  .lang-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lang-pill {
+    padding: 6px 12px; border-radius: var(--rh-radius-pill);
+    border: 1px solid var(--rh-border);
+    font-size: 12px; font-weight: 600;
+    background: white; cursor: pointer;
+  }
+  .lang-pill.active { background: var(--rh-blue); color: white; border-color: var(--rh-blue); }
+
+  /* Results */
+  .results-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .results-count { font-size: 14px; color: var(--rh-fg-2); }
+  .results-count strong { color: var(--rh-fg); font-weight: 700; }
+  .sort-select {
+    padding: 8px 36px 8px 14px; font-family: var(--rh-font); font-size: 14px;
+    border: 1px solid var(--rh-border); border-radius: 10px; background: white;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+
+  .applied-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .applied-pill {
+    background: var(--rh-blue-100); color: var(--rh-blue-700);
+    padding: 6px 10px 6px 12px; border-radius: var(--rh-radius-pill);
+    font-size: 12px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .applied-pill button {
+    background: none; border: 0; color: var(--rh-blue); cursor: pointer;
+    padding: 0; line-height: 1; font-size: 14px;
+  }
+
+  /* Specialist cards (list-style) */
+  .spec-list { display: flex; flex-direction: column; gap: 12px; }
+  .spec-row {
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg);
+    padding: 20px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 20px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .spec-row:hover { border-color: var(--rh-border-strong); box-shadow: var(--rh-shadow-sm); }
+  .avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 18px; flex-shrink: 0;
+    position: relative;
+  }
+  .av-1 { background: linear-gradient(135deg, #185FA5, #0A3A66); }
+  .av-2 { background: linear-gradient(135deg, #1D9E75, #157A5A); }
+  .av-3 { background: linear-gradient(135deg, #D97706, #9A4D00); }
+  .av-4 { background: linear-gradient(135deg, #6366F1, #4338CA); }
+  .av-5 { background: linear-gradient(135deg, #EC4899, #BE185D); }
+  .av-6 { background: linear-gradient(135deg, #0EA5E9, #0369A1); }
+  .av-verify {
+    position: absolute; bottom: -2px; right: -2px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--rh-teal); color: white;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid white;
+  }
+  .av-verify svg { width: 12px; height: 12px; }
+
+  .row-main { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .row-name {
+    font-size: 17px; font-weight: 700; color: var(--rh-fg);
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .row-meta {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    font-size: 13px; color: var(--rh-fg-2);
+    align-items: center;
+  }
+  .row-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--rh-fg-3); }
+  .row-license { font-family: var(--rh-font-mono); font-size: 11px; color: var(--rh-fg-3); }
+  .row-bio { font-size: 13px; color: var(--rh-fg-2); line-height: 1.55; margin: 4px 0 0; max-width: 600px; }
+  .row-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip { font-size: 12px; font-weight: 500; background: var(--rh-bg-alt); color: var(--rh-fg-2); padding: 4px 10px; border-radius: var(--rh-radius-pill); }
+
+  .row-side {
+    display: flex; flex-direction: column; align-items: flex-end;
+    justify-content: space-between; gap: 12px; min-width: 160px;
+  }
+  .price { font-size: 20px; font-weight: 700; color: var(--rh-navy); white-space: nowrap; }
+  .price small { font-weight: 500; font-size: 12px; color: var(--rh-fg-3); }
+  .rating-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #FFF7E0; color: #92400E;
+    padding: 4px 10px; border-radius: var(--rh-radius-pill);
+    font-size: 13px; font-weight: 700;
+  }
+  .rating-pill .star { color: #F59E0B; }
+  .rating-pill .count { color: #92400E; opacity: 0.7; font-weight: 500; font-size: 11px; }
+  .row-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .row-actions .rh-btn { width: 100%; }
+
+  /* Pagination */
+  .pagination {
+    display: flex; justify-content: center; gap: 4px;
+    margin-top: 32px;
+  }
+  .pagination button {
+    width: 38px; height: 38px;
+    border: 1px solid var(--rh-border);
+    background: white;
+    border-radius: 10px;
+    font: 600 14px var(--rh-font);
+    color: var(--rh-fg-2); cursor: pointer;
+  }
+  .pagination button.active { background: var(--rh-navy); color: white; border-color: var(--rh-navy); }
+  .pagination button:not(.active):hover { border-color: var(--rh-border-strong); }
+
+  @media (max-width: 980px) {
+    .catalog { grid-template-columns: 1fr; }
+    .filters { position: static; }
+    .spec-row { grid-template-columns: auto 1fr; }
+    .row-side { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+    .search-bar { grid-template-columns: 1fr; }
+    .sb-field + .sb-field { border-left: 0; border-top: 1px solid var(--rh-border); }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="Landing.html"><span class="logo-mark">✓</span>relocant.help</a>
+    <div class="nav-links">
+      <a href="Catalog.html" class="active">Specialists</a>
+      <a href="Landing.html#how">How it works</a>
+      <a href="#">For specialists</a>
+      <a href="#">About</a>
+    </div>
+    <div class="nav-right">
+      <div class="lang-switch">
+        <button>UA</button>
+        <button class="active">RU</button>
+        <button>EN</button>
+      </div>
+      <a class="rh-btn rh-btn-sm" style="background:rgba(255,255,255,0.1); color:white;" href="#">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="page-head-inner">
+    <div class="breadcrumb"><a href="Landing.html">Home</a> · Specialists</div>
+    <h1>Verified specialists in Europe</h1>
+    <p>47 lawyers and accountants. All credentials checked. UA, RU, EN supported.</p>
+
+    <div class="search-bar">
+      <div class="sb-field">
+        <label>Country</label>
+        <div class="value">🇩🇪 Germany</div>
+      </div>
+      <div class="sb-field">
+        <label>Service</label>
+        <div class="value">All services</div>
+      </div>
+      <div class="sb-field">
+        <label>Language</label>
+        <div class="value">UA, RU</div>
+      </div>
+      <button class="sb-btn">Search</button>
+    </div>
+  </div>
+</header>
+
+<main class="catalog">
+  <!-- Filters -->
+  <aside class="filters">
+    <div class="filters-head">
+      <h3>Filters</h3>
+      <a href="#">Clear all</a>
+    </div>
+
+    <div class="filter-group">
+      <h4>Service type</h4>
+      <label class="check-row"><input type="checkbox" checked /> Immigration lawyer <span class="count">12</span></label>
+      <label class="check-row"><input type="checkbox" checked /> Tax accountant <span class="count">9</span></label>
+      <label class="check-row"><input type="checkbox" /> Corporate lawyer <span class="count">8</span></label>
+      <label class="check-row"><input type="checkbox" /> Family lawyer <span class="count">6</span></label>
+      <label class="check-row"><input type="checkbox" /> Real estate <span class="count">5</span></label>
+      <label class="check-row"><input type="checkbox" /> Criminal defense <span class="count">3</span></label>
+    </div>
+
+    <div class="filter-group">
+      <h4>Country</h4>
+      <label class="check-row"><input type="checkbox" checked /> 🇩🇪 Germany <span class="count">14</span></label>
+      <label class="check-row"><input type="checkbox" /> 🇵🇱 Poland <span class="count">11</span></label>
+      <label class="check-row"><input type="checkbox" /> 🇨🇿 Czechia <span class="count">7</span></label>
+      <label class="check-row"><input type="checkbox" /> 🇦🇹 Austria <span class="count">5</span></label>
+      <label class="check-row"><input type="checkbox" /> 🇳🇱 Netherlands <span class="count">4</span></label>
+      <label class="check-row"><input type="checkbox" /> 🇪🇸 Spain <span class="count">3</span></label>
+    </div>
+
+    <div class="filter-group">
+      <h4>Languages</h4>
+      <div class="lang-pills">
+        <span class="lang-pill active">UA</span>
+        <span class="lang-pill active">RU</span>
+        <span class="lang-pill">EN</span>
+        <span class="lang-pill">DE</span>
+        <span class="lang-pill">PL</span>
+        <span class="lang-pill">CZ</span>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h4>Price per consultation</h4>
+      <div class="price-range">
+        <input type="text" placeholder="€ Min" value="50" />
+        <input type="text" placeholder="€ Max" value="250" />
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h4>Verification</h4>
+      <label class="check-row"><input type="checkbox" checked /> License verified <span class="count">47</span></label>
+      <label class="check-row"><input type="checkbox" /> Top-rated (4.8+) <span class="count">23</span></label>
+      <label class="check-row"><input type="checkbox" /> Available this week <span class="count">31</span></label>
+    </div>
+  </aside>
+
+  <!-- Results -->
+  <section>
+    <div class="results-head">
+      <div class="results-count"><strong>26 specialists</strong> match your filters</div>
+      <select class="sort-select">
+        <option>Sort: Best match</option>
+        <option>Highest rated</option>
+        <option>Lowest price</option>
+        <option>Most experience</option>
+      </select>
+    </div>
+
+    <div class="applied-filters">
+      <span class="applied-pill">Germany <button>×</button></span>
+      <span class="applied-pill">Immigration lawyer <button>×</button></span>
+      <span class="applied-pill">Tax accountant <button>×</button></span>
+      <span class="applied-pill">UA <button>×</button></span>
+      <span class="applied-pill">RU <button>×</button></span>
+      <span class="applied-pill">License verified <button>×</button></span>
+    </div>
+
+    <div class="spec-list">
+
+      <article class="spec-row">
+        <div class="avatar av-1">АК
+          <span class="av-verify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+        </div>
+        <div class="row-main">
+          <div class="row-name">
+            Anna Kowalski
+            <span class="rh-badge rh-badge-verified">Verified</span>
+          </div>
+          <div class="row-meta">
+            <span>Immigration lawyer</span><span class="dot"></span>
+            <span>📍 Berlin, DE</span><span class="dot"></span>
+            <span>9 years experience</span>
+          </div>
+          <div class="row-license">License BRAK-DE-2019-44827 · Verified Mar 2024</div>
+          <p class="row-bio">Specializes in Blue Card applications, family reunion, and asylum cases for tech professionals relocating from Ukraine and Russia. Native UA speaker.</p>
+          <div class="row-chips">
+            <span class="chip">Blue Card</span>
+            <span class="chip">Family reunion</span>
+            <span class="chip">Asylum</span>
+            <span class="chip">🇺🇦 UA</span>
+            <span class="chip">🇷🇺 RU</span>
+            <span class="chip">🇩🇪 DE</span>
+            <span class="chip">🇬🇧 EN</span>
+          </div>
+        </div>
+        <div class="row-side">
+          <span class="rating-pill"><span class="star">★</span>4.9 <span class="count">127</span></span>
+          <div class="price">€150 <small>/ consult</small></div>
+          <div class="row-actions">
+            <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+            <a href="Profile.html" class="rh-btn rh-btn-secondary rh-btn-sm">View profile</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="spec-row">
+        <div class="avatar av-2">ДВ
+          <span class="av-verify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+        </div>
+        <div class="row-main">
+          <div class="row-name">
+            Dmytro Voloshyn
+            <span class="rh-badge rh-badge-verified">Verified</span>
+            <span class="rh-badge rh-badge-blue">Top-rated</span>
+          </div>
+          <div class="row-meta">
+            <span>Tax accountant</span><span class="dot"></span>
+            <span>📍 Warsaw, PL</span><span class="dot"></span>
+            <span>12 years experience</span>
+          </div>
+          <div class="row-license">License KIBR-PL-12489 · Verified Jan 2024</div>
+          <p class="row-bio">Tax filing for IT professionals on B2B and contract. PIT/CIT optimization, VAT registration, and SP/IP setup. Helped 200+ Ukrainian relocants.</p>
+          <div class="row-chips">
+            <span class="chip">PIT/CIT</span>
+            <span class="chip">B2B contracts</span>
+            <span class="chip">VAT</span>
+            <span class="chip">🇺🇦 UA</span>
+            <span class="chip">🇷🇺 RU</span>
+            <span class="chip">🇵🇱 PL</span>
+            <span class="chip">🇬🇧 EN</span>
+          </div>
+        </div>
+        <div class="row-side">
+          <span class="rating-pill"><span class="star">★</span>4.9 <span class="count">94</span></span>
+          <div class="price">€85 <small>/ consult</small></div>
+          <div class="row-actions">
+            <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+            <a href="Profile.html" class="rh-btn rh-btn-secondary rh-btn-sm">View profile</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="spec-row">
+        <div class="avatar av-4">ОТ
+          <span class="av-verify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+        </div>
+        <div class="row-main">
+          <div class="row-name">
+            Olena Tkachenko
+            <span class="rh-badge rh-badge-verified">Verified</span>
+            <span class="rh-badge rh-badge-blue">Top-rated</span>
+          </div>
+          <div class="row-meta">
+            <span>Corporate lawyer</span><span class="dot"></span>
+            <span>📍 Prague, CZ</span><span class="dot"></span>
+            <span>15 years experience</span>
+          </div>
+          <div class="row-license">License ČAK-CZ-18305 · Verified Feb 2024</div>
+          <p class="row-bio">Company formation (s.r.o., a.s.), trade licenses, contracts. Specialty in IT/SaaS startups establishing EU presence. Bilingual UA/RU.</p>
+          <div class="row-chips">
+            <span class="chip">Company setup</span>
+            <span class="chip">Trade license</span>
+            <span class="chip">Contracts</span>
+            <span class="chip">🇺🇦 UA</span>
+            <span class="chip">🇨🇿 CZ</span>
+            <span class="chip">🇬🇧 EN</span>
+          </div>
+        </div>
+        <div class="row-side">
+          <span class="rating-pill"><span class="star">★</span>5.0 <span class="count">58</span></span>
+          <div class="price">€110 <small>/ consult</small></div>
+          <div class="row-actions">
+            <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+            <a href="Profile.html" class="rh-btn rh-btn-secondary rh-btn-sm">View profile</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="spec-row">
+        <div class="avatar av-3">МР
+          <span class="av-verify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+        </div>
+        <div class="row-main">
+          <div class="row-name">
+            Maria Reinhardt
+            <span class="rh-badge rh-badge-verified">Verified</span>
+          </div>
+          <div class="row-meta">
+            <span>Family lawyer</span><span class="dot"></span>
+            <span>📍 Vienna, AT</span><span class="dot"></span>
+            <span>7 years experience</span>
+          </div>
+          <div class="row-license">License ÖRAK-AT-9921 · Verified Apr 2024</div>
+          <p class="row-bio">Cross-border family matters: divorce, child custody, marriage registration for couples with split EU/non-EU citizenship. Working RU.</p>
+          <div class="row-chips">
+            <span class="chip">Divorce</span>
+            <span class="chip">Custody</span>
+            <span class="chip">Marriage</span>
+            <span class="chip">🇷🇺 RU</span>
+            <span class="chip">🇦🇹 DE</span>
+            <span class="chip">🇬🇧 EN</span>
+          </div>
+        </div>
+        <div class="row-side">
+          <span class="rating-pill"><span class="star">★</span>4.8 <span class="count">42</span></span>
+          <div class="price">€120 <small>/ consult</small></div>
+          <div class="row-actions">
+            <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+            <a href="Profile.html" class="rh-btn rh-btn-secondary rh-btn-sm">View profile</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="spec-row">
+        <div class="avatar av-5">ИП
+          <span class="av-verify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+        </div>
+        <div class="row-main">
+          <div class="row-name">
+            Iryna Petrenko
+            <span class="rh-badge rh-badge-verified">Verified</span>
+          </div>
+          <div class="row-meta">
+            <span>Immigration lawyer</span><span class="dot"></span>
+            <span>📍 Munich, DE</span><span class="dot"></span>
+            <span>6 years experience</span>
+          </div>
+          <div class="row-license">License BRAK-DE-2020-51190 · Verified Feb 2024</div>
+          <p class="row-bio">Residence permits, citizenship applications, and Niederlassungserlaubnis. Particular focus on Bavaria-specific procedures.</p>
+          <div class="row-chips">
+            <span class="chip">Residence permit</span>
+            <span class="chip">Citizenship</span>
+            <span class="chip">🇺🇦 UA</span>
+            <span class="chip">🇷🇺 RU</span>
+            <span class="chip">🇩🇪 DE</span>
+          </div>
+        </div>
+        <div class="row-side">
+          <span class="rating-pill"><span class="star">★</span>4.7 <span class="count">76</span></span>
+          <div class="price">€130 <small>/ consult</small></div>
+          <div class="row-actions">
+            <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+            <a href="Profile.html" class="rh-btn rh-btn-secondary rh-btn-sm">View profile</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="spec-row">
+        <div class="avatar av-6">СГ
+          <span class="av-verify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+        </div>
+        <div class="row-main">
+          <div class="row-name">
+            Sergiy Hrynkiv
+            <span class="rh-badge rh-badge-verified">Verified</span>
+          </div>
+          <div class="row-meta">
+            <span>Tax accountant</span><span class="dot"></span>
+            <span>📍 Hamburg, DE</span><span class="dot"></span>
+            <span>10 years experience</span>
+          </div>
+          <div class="row-license">License StBK-DE-22041 · Verified Jan 2024</div>
+          <p class="row-bio">Steuerberater certified for Freiberufler, GmbH founders, and remote workers. Bilingual filings, ELSTER setup, Gewerbeanmeldung support.</p>
+          <div class="row-chips">
+            <span class="chip">Freiberufler</span>
+            <span class="chip">GmbH tax</span>
+            <span class="chip">ELSTER</span>
+            <span class="chip">🇺🇦 UA</span>
+            <span class="chip">🇩🇪 DE</span>
+            <span class="chip">🇬🇧 EN</span>
+          </div>
+        </div>
+        <div class="row-side">
+          <span class="rating-pill"><span class="star">★</span>4.8 <span class="count">63</span></span>
+          <div class="price">€95 <small>/ consult</small></div>
+          <div class="row-actions">
+            <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+            <a href="Profile.html" class="rh-btn rh-btn-secondary rh-btn-sm">View profile</a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="pagination">
+      <button>‹</button>
+      <button class="active">1</button>
+      <button>2</button>
+      <button>3</button>
+      <button>4</button>
+      <button>5</button>
+      <button>›</button>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

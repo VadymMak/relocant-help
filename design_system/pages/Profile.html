@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Anna Kowalski — Immigration lawyer · relocant.help</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { background: var(--rh-bg); }
+
+  /* Nav */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(4,44,83,0.98); backdrop-filter: blur(8px); color: white; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .nav-inner { max-width: 1200px; margin: 0 auto; padding: 16px 24px; display: flex; align-items: center; gap: 32px; }
+  .logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; color: white; text-decoration: none; }
+  .logo-mark { width: 28px; height: 28px; background: var(--rh-teal); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 14px; }
+  .nav-links { display: flex; gap: 24px; flex: 1; font-size: 14px; }
+  .nav-links a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .lang-switch { display: flex; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 3px; }
+  .lang-switch button { background: transparent; border: 0; color: rgba(255,255,255,0.7); font: 600 12px var(--rh-font); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+  .lang-switch button.active { background: white; color: var(--rh-navy); }
+
+  /* Profile header */
+  .prof-head {
+    background: var(--rh-navy);
+    color: white;
+    padding: 32px 24px 100px;
+  }
+  .prof-head-inner { max-width: 1200px; margin: 0 auto; }
+  .breadcrumb { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 24px; }
+  .breadcrumb a { color: rgba(255,255,255,0.75); text-decoration: none; }
+
+  .prof-card-top {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 28px;
+    align-items: flex-start;
+  }
+  .av-lg {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: linear-gradient(135deg, #185FA5, #0A3A66);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 40px; font-weight: 700;
+    border: 4px solid rgba(255,255,255,0.15);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .av-lg .verify {
+    position: absolute; bottom: 4px; right: 4px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--rh-teal); color: white;
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid var(--rh-navy);
+  }
+  .av-lg .verify svg { width: 18px; height: 18px; }
+  .prof-name { font-size: 36px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .prof-role { font-size: 18px; color: rgba(255,255,255,0.8); margin: 0 0 16px; }
+  .prof-quick {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    color: rgba(255,255,255,0.75); font-size: 14px;
+  }
+  .prof-quick span { display: inline-flex; align-items: center; gap: 6px; }
+  .prof-rating {
+    display: flex; align-items: center; gap: 8px; margin-top: 16px;
+    background: rgba(255,255,255,0.08);
+    padding: 10px 14px; border-radius: 12px;
+    width: fit-content;
+  }
+  .prof-rating .star { color: #FBBF24; font-size: 18px; }
+  .prof-rating strong { color: white; font-size: 16px; font-weight: 700; }
+  .prof-rating span { color: rgba(255,255,255,0.65); font-size: 13px; }
+
+  .prof-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .prof-tag {
+    background: rgba(255,255,255,0.1);
+    color: white; padding: 5px 12px;
+    border-radius: 999px; font-size: 13px; font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .prof-tag.verified {
+    background: rgba(29,158,117,0.18); color: #6FCFA9;
+    border-color: rgba(29,158,117,0.4);
+  }
+
+  /* Layout */
+  .prof-body {
+    max-width: 1200px; margin: -60px auto 80px; padding: 0 24px;
+    display: grid; grid-template-columns: 1fr 380px; gap: 32px;
+    position: relative; z-index: 2;
+  }
+
+  /* Tabs */
+  .tabs {
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg); padding: 4px;
+    display: inline-flex; gap: 2px; margin-bottom: 20px;
+    box-shadow: var(--rh-shadow-xs);
+  }
+  .tabs button {
+    background: transparent; border: 0;
+    padding: 10px 16px; border-radius: 10px;
+    font: 600 14px var(--rh-font);
+    color: var(--rh-fg-2); cursor: pointer;
+  }
+  .tabs button.active { background: var(--rh-navy); color: white; }
+
+  /* Sections */
+  .panel {
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg);
+    padding: 28px; margin-bottom: 16px;
+    box-shadow: var(--rh-shadow-xs);
+  }
+  .panel h2 {
+    font-size: 20px; font-weight: 700; margin: 0 0 16px;
+    color: var(--rh-navy);
+  }
+  .panel p { font-size: 15px; line-height: 1.65; color: var(--rh-fg); margin: 0 0 12px; }
+
+  /* Verification details */
+  .verify-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  }
+  .verify-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px; border: 1px solid var(--rh-border);
+    border-radius: 12px; background: var(--rh-bg);
+  }
+  .verify-item-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--rh-teal-100); color: var(--rh-teal-700);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .verify-item-text strong { display: block; font-size: 13px; font-weight: 700; color: var(--rh-fg); }
+  .verify-item-text small { display: block; font-size: 12px; color: var(--rh-fg-2); margin-top: 2px; }
+  .verify-item-text code { display: block; font-family: var(--rh-font-mono); font-size: 11px; color: var(--rh-fg-3); margin-top: 4px; }
+
+  /* Specializations grid */
+  .spec-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .spec-pills .chip {
+    font-size: 13px; font-weight: 500;
+    background: var(--rh-blue-100); color: var(--rh-blue-700);
+    padding: 6px 12px; border-radius: 999px;
+  }
+
+  /* Reviews */
+  .review-summary {
+    display: grid; grid-template-columns: 200px 1fr;
+    gap: 32px; margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--rh-border);
+  }
+  .review-big {
+    text-align: center;
+  }
+  .review-big .num {
+    font-size: 56px; font-weight: 800; color: var(--rh-navy); line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .review-big .stars { color: #F59E0B; font-size: 18px; margin: 4px 0; letter-spacing: 2px; }
+  .review-big small { font-size: 13px; color: var(--rh-fg-2); }
+  .review-bars { display: flex; flex-direction: column; gap: 6px; }
+  .review-bar { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .review-bar .label { width: 16px; color: var(--rh-fg-2); }
+  .review-bar .track { flex: 1; height: 6px; background: var(--rh-bg-alt); border-radius: 999px; overflow: hidden; }
+  .review-bar .fill { height: 100%; background: #F59E0B; border-radius: 999px; }
+  .review-bar .pct { width: 30px; text-align: right; color: var(--rh-fg-2); }
+
+  .review { padding: 20px 0; border-top: 1px solid var(--rh-border); }
+  .review:first-of-type { border-top: 0; padding-top: 0; }
+  .review-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .review-av {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 14px; flex-shrink: 0;
+  }
+  .av-r1 { background: linear-gradient(135deg, #6366F1, #4338CA); }
+  .av-r2 { background: linear-gradient(135deg, #EC4899, #BE185D); }
+  .av-r3 { background: linear-gradient(135deg, #0EA5E9, #0369A1); }
+  .review-author strong { display: block; font-size: 14px; font-weight: 700; }
+  .review-author small { font-size: 12px; color: var(--rh-fg-3); }
+  .review-stars { color: #F59E0B; font-size: 14px; margin-left: auto; letter-spacing: 1px; }
+  .review-body { font-size: 14px; color: var(--rh-fg); line-height: 1.6; margin: 0; }
+  .review-meta {
+    margin-top: 8px; font-size: 12px; color: var(--rh-fg-3);
+    display: flex; gap: 12px;
+  }
+
+  /* Booking sidebar */
+  .booking {
+    position: sticky; top: 88px;
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg);
+    box-shadow: var(--rh-shadow-md);
+    align-self: flex-start;
+    overflow: hidden;
+  }
+  .booking-head {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--rh-border);
+    background: var(--rh-bg);
+  }
+  .booking-head .price-big { font-size: 28px; font-weight: 800; color: var(--rh-navy); letter-spacing: -0.02em; }
+  .booking-head .price-big small { font-weight: 500; font-size: 14px; color: var(--rh-fg-2); }
+  .booking-head .duration { font-size: 13px; color: var(--rh-fg-2); margin-top: 4px; }
+
+  .booking-body { padding: 24px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 700;
+    color: var(--rh-fg); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .field textarea {
+    width: 100%; min-height: 90px;
+    padding: 12px; border: 1px solid var(--rh-border);
+    border-radius: 10px; font: 14px var(--rh-font);
+    color: var(--rh-fg); resize: vertical; box-sizing: border-box;
+  }
+  .field textarea:focus { outline: none; border-color: var(--rh-blue); box-shadow: 0 0 0 3px rgba(24,95,165,0.2); }
+
+  .slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .slot {
+    border: 1px solid var(--rh-border); background: white;
+    padding: 10px 0; border-radius: 8px;
+    text-align: center; font: 600 13px var(--rh-font);
+    cursor: pointer; color: var(--rh-fg);
+  }
+  .slot:hover { border-color: var(--rh-blue); }
+  .slot.selected { background: var(--rh-blue); color: white; border-color: var(--rh-blue); }
+  .slot.disabled { color: var(--rh-fg-3); background: var(--rh-bg); cursor: not-allowed; }
+
+  .date-strip { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .date-pill {
+    flex-shrink: 0; padding: 10px 14px; border: 1px solid var(--rh-border);
+    border-radius: 10px; cursor: pointer; text-align: center;
+    background: white; min-width: 60px;
+  }
+  .date-pill.selected { background: var(--rh-navy); color: white; border-color: var(--rh-navy); }
+  .date-pill .dow { font-size: 11px; color: var(--rh-fg-3); text-transform: uppercase; }
+  .date-pill.selected .dow { color: rgba(255,255,255,0.7); }
+  .date-pill .dom { font-size: 16px; font-weight: 700; margin-top: 2px; }
+
+  .booking-foot { padding: 0 24px 24px; }
+  .booking-foot .rh-btn { width: 100%; }
+  .booking-note {
+    font-size: 12px; color: var(--rh-fg-2); margin: 12px 0 0;
+    text-align: center; line-height: 1.5;
+  }
+  .booking-note strong { color: var(--rh-teal-700); }
+
+  @media (max-width: 980px) {
+    .prof-body { grid-template-columns: 1fr; }
+    .prof-card-top { grid-template-columns: 1fr; text-align: center; }
+    .av-lg { margin: 0 auto; }
+    .booking { position: static; }
+    .review-summary { grid-template-columns: 1fr; }
+    .verify-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="Landing.html"><span class="logo-mark">✓</span>relocant.help</a>
+    <div class="nav-links">
+      <a href="Catalog.html">Specialists</a>
+      <a href="Landing.html#how">How it works</a>
+      <a href="#">For specialists</a>
+      <a href="#">About</a>
+    </div>
+    <div class="nav-right">
+      <div class="lang-switch">
+        <button>UA</button>
+        <button class="active">RU</button>
+        <button>EN</button>
+      </div>
+      <a class="rh-btn rh-btn-sm" style="background:rgba(255,255,255,0.1); color:white;" href="#">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<header class="prof-head">
+  <div class="prof-head-inner">
+    <div class="breadcrumb"><a href="Landing.html">Home</a> · <a href="Catalog.html">Specialists</a> · Anna Kowalski</div>
+    <div class="prof-card-top">
+      <div class="av-lg">
+        АК
+        <span class="verify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+      </div>
+      <div>
+        <h1 class="prof-name">Anna Kowalski</h1>
+        <div class="prof-role">Immigration lawyer · 9 years experience</div>
+        <div class="prof-quick">
+          <span>📍 Berlin, Germany</span>
+          <span>⌚ Responds within 4h</span>
+          <span>📅 Available this week</span>
+        </div>
+        <div class="prof-rating">
+          <span class="star">★</span>
+          <strong>4.9</strong>
+          <span>· 127 verified reviews</span>
+        </div>
+        <div class="prof-tags">
+          <span class="prof-tag verified">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Verified
+          </span>
+          <span class="prof-tag">🇺🇦 Українська</span>
+          <span class="prof-tag">🇷🇺 Русский</span>
+          <span class="prof-tag">🇩🇪 Deutsch</span>
+          <span class="prof-tag">🇬🇧 English</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="prof-body">
+
+  <div>
+    <div class="tabs">
+      <button class="active">Overview</button>
+      <button>Verification</button>
+      <button>Reviews (127)</button>
+      <button>Pricing</button>
+    </div>
+
+    <!-- About -->
+    <div class="panel">
+      <h2>About Anna</h2>
+      <p>I help Ukrainian and Russian-speaking professionals relocate to Germany and build a stable legal foundation here. After nine years of practice — six in Berlin — I've handled over 400 successful Blue Card and family reunion cases.</p>
+      <p>My focus is on tech professionals, freelancers, and families with children. I work directly with the Ausländerbehörde in Berlin, Brandenburg, and Saxony, and I know the realistic timelines for each office. No promises I can't keep.</p>
+      <p>Consultations happen on Zoom or at my Mitte office. Documents reviewed in advance — you walk out with a clear plan, not more questions.</p>
+    </div>
+
+    <!-- Specializations -->
+    <div class="panel">
+      <h2>Specializations</h2>
+      <div class="spec-pills">
+        <span class="chip">Blue Card (EU)</span>
+        <span class="chip">Family reunion</span>
+        <span class="chip">Asylum & subsidiary protection</span>
+        <span class="chip">Niederlassungserlaubnis</span>
+        <span class="chip">Visa appeals</span>
+        <span class="chip">Citizenship</span>
+        <span class="chip">Work permits for spouses</span>
+      </div>
+    </div>
+
+    <!-- Verification details -->
+    <div class="panel">
+      <h2>Verification details</h2>
+      <p style="color: var(--rh-fg-2); font-size: 14px; margin-bottom: 20px;">Last re-verified March 14, 2024. Next check: March 2025.</p>
+      <div class="verify-grid">
+        <div class="verify-item">
+          <div class="verify-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+          <div class="verify-item-text">
+            <strong>Bar association</strong>
+            <small>Berliner Rechtsanwaltskammer (BRAK)</small>
+            <code>BRAK-DE-2019-44827</code>
+          </div>
+        </div>
+        <div class="verify-item">
+          <div class="verify-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+          <div class="verify-item-text">
+            <strong>License active</strong>
+            <small>Issued June 2019 · No sanctions on record</small>
+            <code>Cross-checked Mar 2024</code>
+          </div>
+        </div>
+        <div class="verify-item">
+          <div class="verify-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 8h14M5 16h14"/></svg></div>
+          <div class="verify-item-text">
+            <strong>Languages tested</strong>
+            <small>Native UA · C2 RU · C2 DE · C1 EN</small>
+            <code>Verified by relocant.help team</code>
+          </div>
+        </div>
+        <div class="verify-item">
+          <div class="verify-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+          <div class="verify-item-text">
+            <strong>References</strong>
+            <small>5 client references confirmed at onboarding</small>
+            <code>Plus 127 public reviews here</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="panel">
+      <h2>Reviews from past clients</h2>
+      <div class="review-summary">
+        <div class="review-big">
+          <div class="num">4.9</div>
+          <div class="stars">★ ★ ★ ★ ★</div>
+          <small>Based on 127 reviews</small>
+        </div>
+        <div class="review-bars">
+          <div class="review-bar"><span class="label">5</span><div class="track"><div class="fill" style="width: 89%"></div></div><span class="pct">89%</span></div>
+          <div class="review-bar"><span class="label">4</span><div class="track"><div class="fill" style="width: 8%"></div></div><span class="pct">8%</span></div>
+          <div class="review-bar"><span class="label">3</span><div class="track"><div class="fill" style="width: 2%"></div></div><span class="pct">2%</span></div>
+          <div class="review-bar"><span class="label">2</span><div class="track"><div class="fill" style="width: 1%"></div></div><span class="pct">1%</span></div>
+          <div class="review-bar"><span class="label">1</span><div class="track"><div class="fill" style="width: 0%"></div></div><span class="pct">0%</span></div>
+        </div>
+      </div>
+
+      <div class="review">
+        <div class="review-head">
+          <div class="review-av av-r1">КВ</div>
+          <div class="review-author">
+            <strong>Kateryna V.</strong>
+            <small>Blue Card application · March 2024</small>
+          </div>
+          <div class="review-stars">★★★★★</div>
+        </div>
+        <p class="review-body">Anna walked us through the Blue Card process step by step — in Ukrainian. We had been refused once before working with another lawyer; with Anna we got approval in 7 weeks. She prepared us for every question the Ausländerbehörde might ask. Worth every euro.</p>
+        <div class="review-meta">
+          <span>Verified booking</span>
+          <span>·</span>
+          <span>Helpful (24)</span>
+        </div>
+      </div>
+
+      <div class="review">
+        <div class="review-head">
+          <div class="review-av av-r2">МС</div>
+          <div class="review-author">
+            <strong>Mikhail S.</strong>
+            <small>Family reunion · February 2024</small>
+          </div>
+          <div class="review-stars">★★★★★</div>
+        </div>
+        <p class="review-body">Brought my wife and two kids over from Tbilisi. Anna handled documents in Russian, dealt with the embassy back-and-forth, and explained timelines honestly. No false promises. Family arrived 4 months later. Highly recommend.</p>
+        <div class="review-meta">
+          <span>Verified booking</span>
+          <span>·</span>
+          <span>Helpful (19)</span>
+        </div>
+      </div>
+
+      <div class="review">
+        <div class="review-head">
+          <div class="review-av av-r3">ЕП</div>
+          <div class="review-author">
+            <strong>Elena P.</strong>
+            <small>Visa appeal · January 2024</small>
+          </div>
+          <div class="review-stars">★★★★★</div>
+        </div>
+        <p class="review-body">After my Schengen extension was denied I was in panic. Anna took the case the same week, filed a Widerspruch, and got the decision reversed within a month. She's calm, precise and never wastes your time.</p>
+        <div class="review-meta">
+          <span>Verified booking</span>
+          <span>·</span>
+          <span>Helpful (15)</span>
+        </div>
+      </div>
+
+      <a class="rh-btn rh-btn-secondary" style="margin-top: 8px;" href="#">Show all 127 reviews</a>
+    </div>
+  </div>
+
+  <!-- Booking sidebar -->
+  <aside class="booking">
+    <div class="booking-head">
+      <div class="price-big">€150 <small>/ 60 min</small></div>
+      <div class="duration">Initial consultation · video or in-person · Berlin Mitte</div>
+    </div>
+    <div class="booking-body">
+      <div class="field">
+        <label>Pick a date</label>
+        <div class="date-strip">
+          <div class="date-pill"><div class="dow">Mon</div><div class="dom">12</div></div>
+          <div class="date-pill selected"><div class="dow">Tue</div><div class="dom">13</div></div>
+          <div class="date-pill"><div class="dow">Wed</div><div class="dom">14</div></div>
+          <div class="date-pill"><div class="dow">Thu</div><div class="dom">15</div></div>
+          <div class="date-pill"><div class="dow">Fri</div><div class="dom">16</div></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Available times</label>
+        <div class="slot-grid">
+          <div class="slot disabled">09:00</div>
+          <div class="slot">10:30</div>
+          <div class="slot selected">11:30</div>
+          <div class="slot disabled">13:00</div>
+          <div class="slot">14:30</div>
+          <div class="slot">16:00</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Your case (optional)</label>
+        <textarea placeholder="Briefly describe your situation — country of origin, urgency, what you've tried so far. Anna prepares for the call based on this."></textarea>
+      </div>
+    </div>
+    <div class="booking-foot">
+      <a href="#" class="rh-btn rh-btn-primary rh-btn-lg">Book consultation · €150</a>
+      <p class="booking-note"><strong>You pay only after the call.</strong> Free 15-min intro available.</p>
+    </div>
+  </aside>
+</main>
+
+</body>
+</html>

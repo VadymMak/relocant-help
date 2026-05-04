@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>relocant.help — Verified lawyers & accountants for relocants in Europe</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { background: var(--rh-bg); }
+
+  /* Top nav */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(4, 44, 83, 0.98);
+    backdrop-filter: blur(8px);
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .nav-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 32px;
+  }
+  .logo {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 18px;
+    color: white; text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--rh-teal);
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 14px;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+  }
+  .nav-links {
+    display: flex; gap: 24px; flex: 1;
+    font-size: 14px;
+  }
+  .nav-links a {
+    color: rgba(255,255,255,0.85); text-decoration: none;
+    font-weight: 500;
+  }
+  .nav-links a:hover { color: white; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .lang-switch {
+    display: flex; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--rh-radius-pill);
+    padding: 3px;
+  }
+  .lang-switch button {
+    background: transparent; border: 0;
+    color: rgba(255,255,255,0.7);
+    font: 600 12px var(--rh-font);
+    padding: 5px 12px; border-radius: var(--rh-radius-pill);
+    cursor: pointer; letter-spacing: 0.04em;
+  }
+  .lang-switch button.active {
+    background: white; color: var(--rh-navy);
+  }
+
+  /* Hero */
+  .hero {
+    background:
+      radial-gradient(ellipse 80% 60% at 80% 0%, rgba(24,95,165,0.35), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, rgba(29,158,117,0.18), transparent 60%),
+      var(--rh-navy);
+    color: white;
+    padding: 80px 24px 120px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 70% 80% at 50% 30%, black, transparent 80%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    max-width: 1200px; margin: 0 auto;
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 1.4fr 1fr;
+    gap: 56px; align-items: center;
+  }
+  .hero h1 {
+    font-size: 56px; font-weight: 800; line-height: 1.05;
+    letter-spacing: -0.025em; margin: 16px 0 20px;
+    text-wrap: balance;
+  }
+  .hero h1 .accent {
+    color: #6FCFA9;
+  }
+  .hero p {
+    font-size: 18px; line-height: 1.55;
+    color: rgba(255,255,255,0.75); max-width: 540px;
+    margin: 0 0 32px;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(29,158,117,0.15);
+    border: 1px solid rgba(29,158,117,0.35);
+    padding: 6px 14px; border-radius: var(--rh-radius-pill);
+    font-size: 13px; font-weight: 600; color: #6FCFA9;
+  }
+  .hero-eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #6FCFA9; box-shadow: 0 0 0 4px rgba(111,207,169,0.2);
+  }
+
+  /* Search card */
+  .search-card {
+    background: white; border-radius: var(--rh-radius-lg);
+    box-shadow: var(--rh-shadow-lg);
+    padding: 8px;
+    display: grid; grid-template-columns: 1fr 1fr auto;
+    gap: 4px; align-items: stretch;
+    max-width: 720px;
+  }
+  .search-field {
+    padding: 12px 16px;
+    display: flex; flex-direction: column; gap: 2px;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .search-field:hover { background: var(--rh-bg); }
+  .search-field label {
+    font-size: 11px; font-weight: 700; color: var(--rh-fg-3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .search-field .value {
+    font-size: 15px; font-weight: 600; color: var(--rh-fg);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-field + .search-field {
+    border-left: 1px solid var(--rh-border);
+  }
+  .search-btn {
+    background: var(--rh-blue); color: white; border: 0;
+    padding: 0 28px; border-radius: 12px;
+    font: 600 15px var(--rh-font);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .search-btn:hover { background: var(--rh-blue-700); }
+
+  /* Hero card stack */
+  .hero-visual {
+    position: relative;
+    height: 460px;
+  }
+  .float-card {
+    position: absolute;
+    background: white;
+    border-radius: var(--rh-radius-lg);
+    box-shadow: var(--rh-shadow-lg);
+    padding: 20px;
+    color: var(--rh-fg);
+  }
+  .fc-1 { top: 20px; right: 0; width: 320px; transform: rotate(2deg); }
+  .fc-2 { top: 180px; left: 0; width: 300px; transform: rotate(-3deg); }
+  .fc-3 { bottom: 0; right: 30px; width: 280px; transform: rotate(1deg); }
+
+  .fc-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+  }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: white;
+  }
+  .av-1 { background: linear-gradient(135deg, #185FA5, #0A3A66); }
+  .av-2 { background: linear-gradient(135deg, #1D9E75, #157A5A); }
+  .av-3 { background: linear-gradient(135deg, #D97706, #9A4D00); }
+  .av-4 { background: linear-gradient(135deg, #6366F1, #4338CA); }
+  .av-5 { background: linear-gradient(135deg, #EC4899, #BE185D); }
+  .av-6 { background: linear-gradient(135deg, #0EA5E9, #0369A1); }
+
+  .fc-name { font-weight: 700; font-size: 14px; }
+  .fc-role { font-size: 12px; color: var(--rh-fg-2); }
+  .fc-meta {
+    display: flex; gap: 8px; font-size: 12px; color: var(--rh-fg-2);
+    align-items: center;
+  }
+  .fc-meta strong { color: var(--rh-fg); font-weight: 600; }
+
+  /* Stats bar */
+  .stats {
+    background: white;
+    border-top: 1px solid var(--rh-border);
+    border-bottom: 1px solid var(--rh-border);
+    margin-top: -56px;
+    position: relative; z-index: 2;
+    border-radius: var(--rh-radius-lg);
+    max-width: 1200px;
+    margin-left: auto; margin-right: auto;
+    box-shadow: var(--rh-shadow-md);
+  }
+  .stats-inner {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    padding: 32px 16px;
+  }
+  .stat {
+    text-align: center;
+    border-right: 1px solid var(--rh-border);
+    padding: 0 16px;
+  }
+  .stat:last-child { border-right: 0; }
+  .stat-num {
+    font-size: 36px; font-weight: 800; color: var(--rh-navy);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .stat-num .accent { color: var(--rh-teal); }
+  .stat-label {
+    font-size: 13px; color: var(--rh-fg-2); margin-top: 6px;
+  }
+
+  /* Sections */
+  section.block { max-width: 1200px; margin: 0 auto; padding: 80px 24px; }
+  .section-head {
+    display: flex; align-items: end; justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .section-head h2 {
+    font-size: 36px; font-weight: 700; letter-spacing: -0.02em;
+    margin: 0; color: var(--rh-navy);
+    text-wrap: balance;
+  }
+  .section-head p {
+    font-size: 16px; color: var(--rh-fg-2); margin: 8px 0 0;
+    max-width: 520px;
+  }
+  .section-head a {
+    color: var(--rh-blue); font-weight: 600; text-decoration: none;
+    font-size: 14px;
+  }
+
+  /* Specialist cards */
+  .spec-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .spec {
+    background: white; border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg);
+    padding: 24px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    cursor: pointer;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .spec:hover {
+    border-color: var(--rh-border-strong);
+    box-shadow: var(--rh-shadow-md);
+    transform: translateY(-2px);
+  }
+  .spec-head {
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .spec .avatar { width: 56px; height: 56px; font-size: 18px; }
+  .spec-info { flex: 1; min-width: 0; }
+  .spec-name {
+    font-weight: 700; font-size: 16px; color: var(--rh-fg);
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 2px;
+  }
+  .verify-icon {
+    width: 18px; height: 18px; flex-shrink: 0;
+    color: var(--rh-teal);
+  }
+  .spec-role {
+    font-size: 13px; color: var(--rh-fg-2);
+  }
+  .spec-license {
+    font-family: var(--rh-font-mono);
+    font-size: 11px; color: var(--rh-fg-3);
+    margin-top: 2px;
+  }
+  .rating {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 600;
+  }
+  .rating .star { color: #F59E0B; }
+  .rating .count { color: var(--rh-fg-3); font-weight: 400; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 12px; font-weight: 500;
+    background: var(--rh-bg-alt); color: var(--rh-fg-2);
+    padding: 4px 10px; border-radius: var(--rh-radius-pill);
+  }
+  .chip-flag { display: inline-flex; align-items: center; gap: 5px; }
+  .spec-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 16px; border-top: 1px solid var(--rh-border);
+  }
+  .price {
+    font-size: 18px; font-weight: 700; color: var(--rh-navy);
+  }
+  .price small { font-weight: 500; font-size: 12px; color: var(--rh-fg-3); }
+
+  /* How it works */
+  .how {
+    background: var(--rh-navy);
+    color: white;
+    padding: 80px 24px;
+    margin-top: 24px;
+  }
+  .how-inner { max-width: 1200px; margin: 0 auto; }
+  .how h2 { color: white; }
+  .how-steps {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 40px;
+  }
+  .how-step {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--rh-radius-lg);
+    padding: 28px;
+  }
+  .step-num {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(29,158,117,0.18);
+    color: #6FCFA9;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; margin-bottom: 16px;
+  }
+  .how-step h3 {
+    font-size: 18px; font-weight: 600; margin: 0 0 8px;
+    color: white;
+  }
+  .how-step p {
+    font-size: 14px; color: rgba(255,255,255,0.65);
+    margin: 0; line-height: 1.55;
+  }
+
+  /* Trust */
+  .trust { background: white; border-top: 1px solid var(--rh-border); }
+  .trust-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+  }
+  .trust-item {
+    padding: 24px;
+    border: 1px solid var(--rh-border);
+    border-radius: var(--rh-radius-lg);
+  }
+  .trust-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--rh-blue-100);
+    color: var(--rh-blue);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .trust-icon.teal { background: var(--rh-teal-100); color: var(--rh-teal-700); }
+  .trust-item h4 { font-size: 15px; font-weight: 700; margin: 0 0 6px; }
+  .trust-item p { font-size: 13px; color: var(--rh-fg-2); margin: 0; line-height: 1.5; }
+
+  /* CTA */
+  .cta {
+    max-width: 1200px; margin: 0 auto; padding: 0 24px 80px;
+  }
+  .cta-card {
+    background: linear-gradient(135deg, var(--rh-navy), var(--rh-blue));
+    border-radius: var(--rh-radius-xl);
+    padding: 56px;
+    color: white;
+    display: grid; grid-template-columns: 1.5fr 1fr;
+    gap: 32px; align-items: center;
+    position: relative; overflow: hidden;
+  }
+  .cta-card::after {
+    content: '';
+    position: absolute; top: -40%; right: -10%;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(29,158,117,0.4), transparent 70%);
+    pointer-events: none;
+  }
+  .cta-card h2 {
+    font-size: 32px; font-weight: 700; margin: 0 0 12px;
+    color: white; letter-spacing: -0.02em;
+  }
+  .cta-card p { color: rgba(255,255,255,0.8); margin: 0 0 24px; font-size: 15px; }
+  .cta-actions { display: flex; gap: 12px; }
+  .cta-actions .rh-btn-primary { background: var(--rh-teal); }
+  .cta-actions .rh-btn-primary:hover { background: var(--rh-teal-700); }
+  .cta-actions .rh-btn-secondary { background: transparent; color: white; border-color: rgba(255,255,255,0.3); }
+  .cta-actions .rh-btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+
+  /* Footer */
+  footer {
+    background: var(--rh-navy-900);
+    color: rgba(255,255,255,0.7);
+    padding: 56px 24px 32px;
+  }
+  .foot-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 48px;
+  }
+  .foot-col h5 {
+    color: white; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 0 0 16px; font-weight: 700;
+  }
+  .foot-col a {
+    display: block; color: rgba(255,255,255,0.6);
+    text-decoration: none; font-size: 14px;
+    padding: 6px 0;
+  }
+  .foot-col a:hover { color: white; }
+  .foot-col p { font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.5); margin: 12px 0 0; }
+  .foot-bot {
+    max-width: 1200px; margin: 40px auto 0;
+    padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: rgba(255,255,255,0.5);
+  }
+
+  @media (max-width: 980px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .hero-visual { display: none; }
+    .stats-inner, .spec-grid, .how-steps, .trust-grid { grid-template-columns: repeat(2, 1fr); }
+    .cta-card { grid-template-columns: 1fr; padding: 32px; }
+    .foot-inner { grid-template-columns: 1fr 1fr; }
+    .hero h1 { font-size: 40px; }
+  }
+  @media (max-width: 640px) {
+    .stats-inner, .spec-grid, .how-steps, .trust-grid { grid-template-columns: 1fr; }
+    .stat { border-right: 0; border-bottom: 1px solid var(--rh-border); padding: 16px 0; }
+    .stat:last-child { border-bottom: 0; }
+    .nav-links { display: none; }
+    .search-card { grid-template-columns: 1fr; }
+    .search-field + .search-field { border-left: 0; border-top: 1px solid var(--rh-border); }
+    .hero h1 { font-size: 32px; }
+    .section-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="#">
+      <span class="logo-mark">✓</span>
+      relocant.help
+    </a>
+    <div class="nav-links">
+      <a href="Catalog.html">Specialists</a>
+      <a href="#how">How it works</a>
+      <a href="#">For specialists</a>
+      <a href="#">About</a>
+    </div>
+    <div class="nav-right">
+      <div class="lang-switch">
+        <button>UA</button>
+        <button class="active">RU</button>
+        <button>EN</button>
+      </div>
+      <a class="rh-btn rh-btn-sm" style="background:rgba(255,255,255,0.1); color:white;" href="#">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div>
+      <span class="hero-eyebrow"><span class="dot"></span>47 verified specialists across Europe</span>
+      <h1>Verified lawyers and accountants for your <span class="accent">relocation</span>.</h1>
+      <p>Speak Ukrainian or Russian. Get matched with licensed professionals in 14 European countries — every specialist's credentials checked before they appear.</p>
+
+      <div class="search-card">
+        <div class="search-field">
+          <label>Country</label>
+          <div class="value">
+            🇩🇪 Germany
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="search-field">
+          <label>Service</label>
+          <div class="value">
+            Immigration lawyer
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <button class="search-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Find
+        </button>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="float-card fc-1">
+        <div class="fc-head">
+          <div class="avatar av-1">АК</div>
+          <div>
+            <div class="fc-name">Anna Kowalski</div>
+            <div class="fc-role">Immigration lawyer · Berlin</div>
+          </div>
+        </div>
+        <span class="rh-badge rh-badge-verified">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Verified · BRAK 2019
+        </span>
+      </div>
+      <div class="float-card fc-2">
+        <div class="fc-head">
+          <div class="avatar av-2">ДВ</div>
+          <div>
+            <div class="fc-name">Dmytro Voloshyn</div>
+            <div class="fc-role">Tax accountant · Warsaw</div>
+          </div>
+        </div>
+        <div class="fc-meta">
+          <span style="color:#F59E0B;">★</span><strong>4.9</strong>
+          <span>·</span> <span>UA RU PL EN</span>
+        </div>
+      </div>
+      <div class="float-card fc-3">
+        <div class="fc-head">
+          <div class="avatar av-3">МР</div>
+          <div>
+            <div class="fc-name">Maria Reinhardt</div>
+            <div class="fc-role">Family lawyer · Vienna</div>
+          </div>
+        </div>
+        <div class="fc-meta">
+          <strong>€120</strong><small style="color:var(--rh-fg-3)">/consultation</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stats-inner">
+    <div class="stat">
+      <div class="stat-num">6M+</div>
+      <div class="stat-label">Relocants helped</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><span class="accent">47</span></div>
+      <div class="stat-label">Verified specialists</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">94%</div>
+      <div class="stat-label">Successful cases</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">14</div>
+      <div class="stat-label">European countries</div>
+    </div>
+  </div>
+</div>
+
+<!-- Top specialists -->
+<section class="block">
+  <div class="section-head">
+    <div>
+      <h2>Top-rated specialists this month</h2>
+      <p>Hand-picked from our verified network — all credentials checked, references confirmed.</p>
+    </div>
+    <a href="Catalog.html">Browse all 47 →</a>
+  </div>
+
+  <div class="spec-grid">
+    <article class="spec">
+      <div class="spec-head">
+        <div class="avatar av-1">АК</div>
+        <div class="spec-info">
+          <div class="spec-name">
+            Anna Kowalski
+            <svg class="verify-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          </div>
+          <div class="spec-role">Immigration lawyer · Berlin, DE</div>
+          <div class="spec-license">License BRAK-DE-2019-44827</div>
+        </div>
+        <div class="rating">
+          <span class="star">★</span>4.9 <span class="count">(127)</span>
+        </div>
+      </div>
+      <div class="chip-row">
+        <span class="chip">Blue Card</span>
+        <span class="chip">Family reunion</span>
+        <span class="chip">Asylum</span>
+      </div>
+      <div class="chip-row">
+        <span class="chip chip-flag">🇺🇦 UA</span>
+        <span class="chip chip-flag">🇷🇺 RU</span>
+        <span class="chip chip-flag">🇩🇪 DE</span>
+        <span class="chip chip-flag">🇬🇧 EN</span>
+      </div>
+      <div class="spec-foot">
+        <div class="price">€150 <small>/ consultation</small></div>
+        <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+      </div>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head">
+        <div class="avatar av-2">ДВ</div>
+        <div class="spec-info">
+          <div class="spec-name">
+            Dmytro Voloshyn
+            <svg class="verify-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          </div>
+          <div class="spec-role">Tax accountant · Warsaw, PL</div>
+          <div class="spec-license">License KIBR-PL-12489</div>
+        </div>
+        <div class="rating">
+          <span class="star">★</span>4.9 <span class="count">(94)</span>
+        </div>
+      </div>
+      <div class="chip-row">
+        <span class="chip">PIT/CIT</span>
+        <span class="chip">B2B contracts</span>
+        <span class="chip">VAT registration</span>
+      </div>
+      <div class="chip-row">
+        <span class="chip chip-flag">🇺🇦 UA</span>
+        <span class="chip chip-flag">🇷🇺 RU</span>
+        <span class="chip chip-flag">🇵🇱 PL</span>
+        <span class="chip chip-flag">🇬🇧 EN</span>
+      </div>
+      <div class="spec-foot">
+        <div class="price">€85 <small>/ consultation</small></div>
+        <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+      </div>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head">
+        <div class="avatar av-4">ОТ</div>
+        <div class="spec-info">
+          <div class="spec-name">
+            Olena Tkachenko
+            <svg class="verify-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          </div>
+          <div class="spec-role">Corporate lawyer · Prague, CZ</div>
+          <div class="spec-license">License ČAK-CZ-18305</div>
+        </div>
+        <div class="rating">
+          <span class="star">★</span>5.0 <span class="count">(58)</span>
+        </div>
+      </div>
+      <div class="chip-row">
+        <span class="chip">Company setup</span>
+        <span class="chip">Trade license</span>
+        <span class="chip">Contracts</span>
+      </div>
+      <div class="chip-row">
+        <span class="chip chip-flag">🇺🇦 UA</span>
+        <span class="chip chip-flag">🇨🇿 CZ</span>
+        <span class="chip chip-flag">🇬🇧 EN</span>
+      </div>
+      <div class="spec-foot">
+        <div class="price">€110 <small>/ consultation</small></div>
+        <a href="Profile.html" class="rh-btn rh-btn-primary rh-btn-sm">Book</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how" id="how">
+  <div class="how-inner">
+    <div class="section-head" style="margin-bottom:0;">
+      <div>
+        <h2>Three steps to verified help</h2>
+        <p style="color:rgba(255,255,255,0.65);">Tell us what you need. We match you with specialists who've already proven they can help.</p>
+      </div>
+    </div>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="step-num">1</div>
+        <h3>Describe your situation</h3>
+        <p>In Ukrainian, Russian or English. Mention country, urgency, and what's at stake. Free, no commitment.</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">2</div>
+        <h3>We match you in &lt; 24h</h3>
+        <p>Our team — backed by Claude AI classification — picks 2–3 specialists whose license, language and specialization fit your case.</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">3</div>
+        <h3>Book a consultation</h3>
+        <p>Pay only after the call. Reviews from past relocants stay public. We never take your data anywhere it doesn't belong.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trust -->
+<section class="trust">
+  <div class="block">
+    <div class="section-head">
+      <div>
+        <h2>Why verification matters</h2>
+        <p>Every specialist passes a four-stage check before they appear. No exceptions.</p>
+      </div>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-item">
+        <div class="trust-icon teal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h4>License verified</h4>
+        <p>Bar association numbers cross-checked against country registers — BRAK, ČAK, KIBR and more.</p>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14M5 16h14M9 4l-2 16M17 4l-2 16"/></svg>
+        </div>
+        <h4>Language confirmed</h4>
+        <p>We test each specialist's working level in UA/RU before listing — no language barrier in your case.</p>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        </div>
+        <h4>References checked</h4>
+        <p>At least 3 previous client references confirmed before launch. Reviews stay public, can't be deleted.</p>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon teal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h4>Active practice</h4>
+        <p>Each specialist re-confirmed annually. Inactive licenses or sanctions remove them from the catalog within 24h.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="cta-card">
+    <div>
+      <h2>Don't navigate European bureaucracy alone.</h2>
+      <p>Tell us about your case in 60 seconds. We'll match you with a verified specialist within a day.</p>
+      <div class="cta-actions">
+        <a href="#" class="rh-btn rh-btn-primary rh-btn-lg">Get matched — free</a>
+        <a href="Catalog.html" class="rh-btn rh-btn-secondary rh-btn-lg">Browse specialists</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-col">
+      <a class="logo" href="#">
+        <span class="logo-mark">✓</span>
+        relocant.help
+      </a>
+      <p>Verified lawyers and accountants for Ukrainian and Russian-speaking relocants in Europe.</p>
+    </div>
+    <div class="foot-col">
+      <h5>Product</h5>
+      <a href="Catalog.html">Find specialists</a>
+      <a href="#">For specialists</a>
+      <a href="#">Pricing</a>
+      <a href="#">How verification works</a>
+    </div>
+    <div class="foot-col">
+      <h5>Company</h5>
+      <a href="#">About</a>
+      <a href="#">Blog</a>
+      <a href="#">Press</a>
+      <a href="#">Contact</a>
+    </div>
+    <div class="foot-col">
+      <h5>Legal</h5>
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+      <a href="#">Verification policy</a>
+      <a href="#">Imprint</a>
+    </div>
+  </div>
+  <div class="foot-bot">
+    <span>© 2026 relocant.help · Made with care in Europe</span>
+    <span>Languages: УКР · РУС · EN · DE · PL</span>
+  </div>
+</footer>
+
+</body>
+</html>
