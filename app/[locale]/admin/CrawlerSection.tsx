@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   lastRun: {
@@ -25,6 +26,7 @@ interface RunResult {
 
 export default function CrawlerSection({ lastRun, stats }: Props) {
   const t = useTranslations('admin')
+  const router = useRouter()
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<RunResult | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
@@ -46,6 +48,7 @@ export default function CrawlerSection({ lastRun, stats }: Props) {
         setRunError(data.error ?? 'Unknown error')
       } else {
         setResult(data)
+        router.refresh()
       }
     } catch {
       setRunError('Network error')

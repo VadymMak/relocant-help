@@ -65,278 +65,209 @@ export default async function AdminPage() {
   } : null
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh', background: 'var(--rh-bg)' }}>
-      {/* Sidebar */}
-      <aside style={{
-        background: 'var(--rh-navy)', color: 'white',
-        padding: '0 0 24px 0',
-        display: 'flex', flexDirection: 'column',
-      }}>
+    <main style={{ padding: '32px', overflow: 'auto' }}>
+      {/* Top row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 4px', color: 'var(--rh-fg)' }}>{t('title')}</h1>
+          <p style={{ fontSize: 14, color: 'var(--rh-fg-2)', margin: 0 }}>{t('subtitle')}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            className="rh-input"
+            placeholder={t('search')}
+            style={{ width: 280, fontSize: 13, padding: '8px 12px' }}
+          />
+          <button className="rh-btn rh-btn-secondary rh-btn-sm">{t('exportCSV')}</button>
+          <button className="rh-btn rh-btn-primary rh-btn-sm">{t('newSpecialist')}</button>
+        </div>
+      </div>
+
+      {/* Metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        {[
+          { label: t('metricsRequests'), value: '186', trend: '↑ 18%', up: true },
+          { label: t('metricsMatchRate'), value: '94%', trend: '↑ 2.1pt', up: true },
+          { label: t('metricsAvgTime'), value: '11h', trend: '↓ 3h faster', up: false },
+          { label: t('metricsGMV'), value: '€48.2k', trend: '↑ 24%', up: true },
+        ].map(({ label, value, trend, up }) => (
+          <div key={label} style={{
+            background: 'white', border: '1px solid var(--rh-border)',
+            borderRadius: 'var(--rh-radius-lg)', padding: 20,
+            boxShadow: 'var(--rh-shadow-xs)',
+          }}>
+            <div style={{ fontSize: 12, color: 'var(--rh-fg-2)', marginBottom: 8, fontWeight: 600 }}>{label}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--rh-fg)', letterSpacing: '-0.02em', marginBottom: 4 }}>{value}</div>
+            <div style={{ fontSize: 12, color: up ? 'var(--rh-teal)' : 'var(--rh-warning)', fontWeight: 600 }}>{trend}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Crawler section */}
+      <CrawlerSection
+        lastRun={lastRunSerialized}
+        stats={{ pending, approved, rejected }}
+      />
+
+      {/* Two-col layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24 }}>
+        {/* Requests table */}
         <div style={{
-          padding: '24px 20px',
-          display: 'flex', alignItems: 'center', gap: 8,
-          fontWeight: 700, fontSize: 16,
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: 'white', border: '1px solid var(--rh-border)',
+          borderRadius: 'var(--rh-radius-lg)', overflow: 'hidden',
         }}>
-          <span style={{
-            width: 28, height: 28, background: 'var(--rh-teal)', borderRadius: 8,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, fontWeight: 800,
-          }}>✓</span>
-          relocant.help
-        </div>
-
-        <SidebarSection label={t('sidebarOperations')} />
-        <SidebarLink href="/admin" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h18v6H3zM3 11h18v10H3z"/></svg>} label={t('sidebarDashboard')} active />
-        <SidebarLink href="/admin/articles" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>} label={t('articles')} badge={pending > 0 ? String(pending) : undefined} />
-        <SidebarLink href="/admin/sources" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>} label="Sources" />
-        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>} label={t('sidebarRequests')} badge="12" />
-        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>} label={t('sidebarSpecialists')} />
-        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>} label={t('sidebarBookings')} />
-
-        <SidebarSection label={t('sidebarNetwork')} />
-        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} label={t('sidebarVerifications')} />
-        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>} label={t('sidebarReviews')} />
-
-        <SidebarSection label={t('sidebarSettings')} />
-        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9"/></svg>} label={t('sidebarConfig')} />
-      </aside>
-
-      {/* Main */}
-      <main style={{ padding: '32px', overflow: 'auto' }}>
-        {/* Top row */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 4px', color: 'var(--rh-fg)' }}>{t('title')}</h1>
-            <p style={{ fontSize: 14, color: 'var(--rh-fg-2)', margin: 0 }}>{t('subtitle')}</p>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              className="rh-input"
-              placeholder={t('search')}
-              style={{ width: 280, fontSize: 13, padding: '8px 12px' }}
-            />
-            <button className="rh-btn rh-btn-secondary rh-btn-sm">{t('exportCSV')}</button>
-            <button className="rh-btn rh-btn-primary rh-btn-sm">{t('newSpecialist')}</button>
-          </div>
-        </div>
-
-        {/* Metrics */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: t('metricsRequests'), value: '186', trend: '↑ 18%', up: true },
-            { label: t('metricsMatchRate'), value: '94%', trend: '↑ 2.1pt', up: true },
-            { label: t('metricsAvgTime'), value: '11h', trend: '↓ 3h faster', up: false },
-            { label: t('metricsGMV'), value: '€48.2k', trend: '↑ 24%', up: true },
-          ].map(({ label, value, trend, up }) => (
-            <div key={label} style={{
-              background: 'white', border: '1px solid var(--rh-border)',
-              borderRadius: 'var(--rh-radius-lg)', padding: 20,
-              boxShadow: 'var(--rh-shadow-xs)',
-            }}>
-              <div style={{ fontSize: 12, color: 'var(--rh-fg-2)', marginBottom: 8, fontWeight: 600 }}>{label}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--rh-fg)', letterSpacing: '-0.02em', marginBottom: 4 }}>{value}</div>
-              <div style={{ fontSize: 12, color: up ? 'var(--rh-teal)' : 'var(--rh-warning)', fontWeight: 600 }}>{trend}</div>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--rh-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 2px' }}>{t('requestsTitle')}</h2>
+              <p style={{ fontSize: 13, color: 'var(--rh-fg-2)', margin: 0 }}>{t('requestsDesc')}</p>
             </div>
-          ))}
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[
+                { label: t('filterNew'), count: 12, active: true },
+                { label: t('filterInProgress'), count: 8 },
+                { label: t('filterMatched'), count: 23 },
+              ].map(({ label, count, active }) => (
+                <button key={label} style={{
+                  background: active ? 'var(--rh-blue-100)' : 'transparent',
+                  color: active ? 'var(--rh-blue-700)' : 'var(--rh-fg-2)',
+                  border: '1px solid ' + (active ? 'var(--rh-blue-100)' : 'var(--rh-border)'),
+                  borderRadius: 'var(--rh-radius-pill)', padding: '5px 12px',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}>
+                  {label}
+                  <span style={{
+                    background: active ? 'var(--rh-blue-700)' : 'var(--rh-border)',
+                    color: active ? 'white' : 'var(--rh-fg-2)',
+                    borderRadius: 10, padding: '1px 7px', fontSize: 11,
+                  }}>{count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--rh-border)', background: 'var(--rh-bg)' }}>
+                  {['ID', 'Relocant', 'Message', 'Country', 'AI classification', 'Status', ''].map((h) => (
+                    <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--rh-fg-3)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((req) => (
+                  <tr key={req.id} style={{ borderBottom: '1px solid var(--rh-border)' }}>
+                    <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: 'var(--rh-font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--rh-fg)' }}>{req.id}</span>
+                      <div style={{ fontSize: 11, color: 'var(--rh-fg-3)', marginTop: 2 }}>{req.time}</div>
+                    </td>
+                    <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className={`rh-avatar ${req.av}`} style={{ width: 32, height: 32, fontSize: 11 }}>{req.initials}</div>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{req.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--rh-fg-3)' }}>{req.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px', maxWidth: 220 }}>
+                      <div style={{ fontSize: 12, color: 'var(--rh-fg-2)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {req.message}
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', fontSize: 13 }}>{req.country}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{
+                        background: 'var(--rh-blue-100)', color: 'var(--rh-blue-700)',
+                        borderRadius: 'var(--rh-radius-pill)', padding: '3px 10px',
+                        fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4,
+                      }}>
+                        ✦ {req.aiTag}
+                      </span>
+                      <div style={{ fontSize: 11, color: 'var(--rh-fg-3)', marginTop: 3 }}>{req.aiSec}</div>
+                      <div style={{ fontSize: 11, color: 'var(--rh-fg-3)', marginTop: 1 }}>
+                        conf. {req.conf} ·{' '}
+                        <span style={{ color: req.urgencyColor, fontWeight: 600 }}>{req.urgency}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        background: req.status === 'Matched' ? 'var(--rh-teal-100)' : req.status === 'Reviewing' ? 'var(--rh-warning-100)' : 'var(--rh-blue-100)',
+                        color: req.status === 'Matched' ? 'var(--rh-teal-700)' : req.status === 'Reviewing' ? 'var(--rh-warning)' : 'var(--rh-blue-700)',
+                        borderRadius: 'var(--rh-radius-pill)', padding: '4px 10px', fontSize: 12, fontWeight: 600,
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                        {req.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      {req.matched ? (
+                        <span style={{
+                          background: 'var(--rh-teal-100)', color: 'var(--rh-teal-700)',
+                          padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        }}>✓ {(req as typeof req & { matchedTo?: string }).matchedTo}</span>
+                      ) : (
+                        <button style={{
+                          background: 'var(--rh-blue)', color: 'white', border: 0,
+                          padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+                        }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 14, height: 14 }}>
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                          </svg>
+                          Match
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Crawler section */}
-        <CrawlerSection
-          lastRun={lastRunSerialized}
-          stats={{ pending, approved, rejected }}
-        />
-
-        {/* Two-col layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24 }}>
-          {/* Requests table */}
+        {/* Right rail */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{
             background: 'white', border: '1px solid var(--rh-border)',
-            borderRadius: 'var(--rh-radius-lg)', overflow: 'hidden',
+            borderRadius: 'var(--rh-radius-lg)', padding: 20,
           }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--rh-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 2px' }}>{t('requestsTitle')}</h2>
-                <p style={{ fontSize: 13, color: 'var(--rh-fg-2)', margin: 0 }}>{t('requestsDesc')}</p>
+            <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px', color: 'var(--rh-navy)' }}>{t('weekTitle')}</h3>
+            {[
+              { label: t('weekRequests'), value: '42' },
+              { label: t('weekMatched'), value: '39' },
+              { label: t('weekBookings'), value: '28' },
+              { label: t('weekRating'), value: '4.87 ★' },
+              { label: t('weekSpecialists'), value: '+2' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: '1px solid var(--rh-border)', fontSize: 13 }}>
+                <span style={{ flex: 1, color: 'var(--rh-fg-2)' }}>{label}</span>
+                <span style={{ fontWeight: 700, color: 'var(--rh-fg)' }}>{value}</span>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {[
-                  { label: t('filterNew'), count: 12, active: true },
-                  { label: t('filterInProgress'), count: 8 },
-                  { label: t('filterMatched'), count: 23 },
-                ].map(({ label, count, active }) => (
-                  <button key={label} style={{
-                    background: active ? 'var(--rh-blue-100)' : 'transparent',
-                    color: active ? 'var(--rh-blue-700)' : 'var(--rh-fg-2)',
-                    border: '1px solid ' + (active ? 'var(--rh-blue-100)' : 'var(--rh-border)'),
-                    borderRadius: 'var(--rh-radius-pill)', padding: '5px 12px',
-                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                  }}>
-                    {label}
-                    <span style={{
-                      background: active ? 'var(--rh-blue-700)' : 'var(--rh-border)',
-                      color: active ? 'white' : 'var(--rh-fg-2)',
-                      borderRadius: 10, padding: '1px 7px', fontSize: 11,
-                    }}>{count}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--rh-border)', background: 'var(--rh-bg)' }}>
-                    {['ID', 'Relocant', 'Message', 'Country', 'AI classification', 'Status', ''].map((h) => (
-                      <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--rh-fg-3)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {requests.map((req) => (
-                    <tr key={req.id} style={{ borderBottom: '1px solid var(--rh-border)' }}>
-                      <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontFamily: 'var(--rh-font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--rh-fg)' }}>{req.id}</span>
-                        <div style={{ fontSize: 11, color: 'var(--rh-fg-3)', marginTop: 2 }}>{req.time}</div>
-                      </td>
-                      <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div className={`rh-avatar ${req.av}`} style={{ width: 32, height: 32, fontSize: 11 }}>{req.initials}</div>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{req.name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--rh-fg-3)' }}>{req.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '14px 16px', maxWidth: 220 }}>
-                        <div style={{ fontSize: 12, color: 'var(--rh-fg-2)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                          {req.message}
-                        </div>
-                      </td>
-                      <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', fontSize: 13 }}>{req.country}</td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{
-                          background: 'var(--rh-blue-100)', color: 'var(--rh-blue-700)',
-                          borderRadius: 'var(--rh-radius-pill)', padding: '3px 10px',
-                          fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4,
-                        }}>
-                          ✦ {req.aiTag}
-                        </span>
-                        <div style={{ fontSize: 11, color: 'var(--rh-fg-3)', marginTop: 3 }}>{req.aiSec}</div>
-                        <div style={{ fontSize: 11, color: 'var(--rh-fg-3)', marginTop: 1 }}>
-                          conf. {req.conf} ·{' '}
-                          <span style={{ color: req.urgencyColor, fontWeight: 600 }}>{req.urgency}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          background: req.status === 'Matched' ? 'var(--rh-teal-100)' : req.status === 'Reviewing' ? 'var(--rh-warning-100)' : 'var(--rh-blue-100)',
-                          color: req.status === 'Matched' ? 'var(--rh-teal-700)' : req.status === 'Reviewing' ? 'var(--rh-warning)' : 'var(--rh-blue-700)',
-                          borderRadius: 'var(--rh-radius-pill)', padding: '4px 10px', fontSize: 12, fontWeight: 600,
-                        }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
-                          {req.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        {req.matched ? (
-                          <span style={{
-                            background: 'var(--rh-teal-100)', color: 'var(--rh-teal-700)',
-                            padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                          }}>✓ {(req as typeof req & { matchedTo?: string }).matchedTo}</span>
-                        ) : (
-                          <button style={{
-                            background: 'var(--rh-blue)', color: 'white', border: 0,
-                            padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-                          }}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 14, height: 14 }}>
-                              <path d="M5 12h14M12 5l7 7-7 7" />
-                            </svg>
-                            Match
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            ))}
           </div>
 
-          {/* Right rail */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{
-              background: 'white', border: '1px solid var(--rh-border)',
-              borderRadius: 'var(--rh-radius-lg)', padding: 20,
-            }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px', color: 'var(--rh-navy)' }}>{t('weekTitle')}</h3>
-              {[
-                { label: t('weekRequests'), value: '42' },
-                { label: t('weekMatched'), value: '39' },
-                { label: t('weekBookings'), value: '28' },
-                { label: t('weekRating'), value: '4.87 ★' },
-                { label: t('weekSpecialists'), value: '+2' },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: '1px solid var(--rh-border)', fontSize: 13 }}>
-                  <span style={{ flex: 1, color: 'var(--rh-fg-2)' }}>{label}</span>
-                  <span style={{ fontWeight: 700, color: 'var(--rh-fg)' }}>{value}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{
-              background: 'white', border: '1px solid var(--rh-border)',
-              borderRadius: 'var(--rh-radius-lg)', padding: 20,
-            }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px', color: 'var(--rh-navy)' }}>{t('aiTitle')}</h3>
-              {[
-                { label: 'Immigration', value: '38%' },
-                { label: 'Tax / Accounting', value: '29%' },
-                { label: 'Company setup', value: '14%' },
-                { label: 'Family law', value: '9%' },
-                { label: 'Other', value: '10%' },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: '1px solid var(--rh-border)', fontSize: 13 }}>
-                  <span style={{ flex: 1, color: 'var(--rh-fg-2)' }}>{label}</span>
-                  <span style={{ fontWeight: 700, color: 'var(--rh-fg)' }}>{value}</span>
-                </div>
-              ))}
-            </div>
+          <div style={{
+            background: 'white', border: '1px solid var(--rh-border)',
+            borderRadius: 'var(--rh-radius-lg)', padding: 20,
+          }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px', color: 'var(--rh-navy)' }}>{t('aiTitle')}</h3>
+            {[
+              { label: 'Immigration', value: '38%' },
+              { label: 'Tax / Accounting', value: '29%' },
+              { label: 'Company setup', value: '14%' },
+              { label: 'Family law', value: '9%' },
+              { label: 'Other', value: '10%' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: '1px solid var(--rh-border)', fontSize: 13 }}>
+                <span style={{ flex: 1, color: 'var(--rh-fg-2)' }}>{label}</span>
+                <span style={{ fontWeight: 700, color: 'var(--rh-fg)' }}>{value}</span>
+              </div>
+            ))}
           </div>
         </div>
-      </main>
-    </div>
-  )
-}
-
-function SidebarSection({ label }: { label: string }) {
-  return (
-    <div style={{ padding: '16px 20px 8px', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-      {label}
-    </div>
-  )
-}
-
-function SidebarLink({ href, icon, label, active, badge }: { href: string; icon: React.ReactNode; label: string; active?: boolean; badge?: string }) {
-  return (
-    <a href={href} style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '10px 20px', cursor: 'pointer', textDecoration: 'none',
-      color: active ? 'white' : 'rgba(255,255,255,0.65)',
-      background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
-      borderLeft: active ? '2px solid var(--rh-teal)' : '2px solid transparent',
-      fontSize: 14, fontWeight: active ? 600 : 400,
-    }}>
-      <span style={{ width: 18, height: 18, flexShrink: 0 }}>{icon}</span>
-      <span style={{ flex: 1 }}>{label}</span>
-      {badge && (
-        <span style={{
-          background: 'var(--rh-blue)', color: 'white',
-          borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 700,
-        }}>{badge}</span>
-      )}
-    </a>
+      </div>
+    </main>
   )
 }
