@@ -16,6 +16,7 @@ export default function ArticleActions({ articleId }: { articleId: string }) {
     })
     setLoading(false)
     router.refresh()
+    setTimeout(() => router.refresh(), 500)
   }
 
   return (

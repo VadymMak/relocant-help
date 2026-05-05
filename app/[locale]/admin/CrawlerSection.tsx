@@ -49,6 +49,7 @@ export default function CrawlerSection({ lastRun, stats }: Props) {
       } else {
         setResult(data)
         router.refresh()
+        setTimeout(() => router.refresh(), 500)
       }
     } catch {
       setRunError('Network error')
