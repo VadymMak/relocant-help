@@ -31,7 +31,8 @@
       "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/wp-json/wp/v2/posts?lang=en&per_page=3\")",
       "Bash(python3 -c ' *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/en/feed/\")",
-      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/en/feed/\")"
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/en/feed/\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d['nav'].keys\\(\\)\\)\\)\")"
     ]
   }
 }
