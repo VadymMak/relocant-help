@@ -100,7 +100,6 @@ export default async function ArticlePage({ params }: Props) {
     throw new Error('Failed to load article. Please try again later.')
   }
 
-  const isRu = locale === 'ru'
   const { title: localizedTitle, fullText, summary } = getLocalizedContent(article, locale)
   const title = localizedTitle || article.originalTitle || ''
   const flag = COUNTRY_FLAG[article.country] ?? '🌍'

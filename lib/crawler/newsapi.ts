@@ -1,72 +1,99 @@
-import { RawArticle } from './crawl'
-
-interface NewsDataItem {
-  title: string | null
+export interface NewsDataArticle {
+  article_id: string
+  title: string
   description: string | null
+  content: string | null
   link: string
-  pubDate: string | null
+  pubDate: string
   source_id: string
+  source_name: string
   country: string[]
   language: string
-  content: string | null
+  keywords: string[] | null
 }
 
-interface NewsDataResponse {
-  status: string
-  totalResults: number
-  results: NewsDataItem[]
-  nextPage?: string
-}
+const NEWSDATA_BASE = 'https://newsdata.io/api/1/news'
 
-export async function fetchNewsData(
-  query: string,
-  countries: string[],
-  language = 'en'
-): Promise<RawArticle[]> {
+const SEARCH_QUERIES = [
+  'Ukrainian refugees Europe residence',
+  'temporary protection Ukraine EU 2026',
+  'Ukrainian migrants Spain Italy Romania',
+]
+
+export async function fetchFromNewsData(): Promise<NewsDataArticle[]> {
   const apiKey = process.env.NEWSDATA_API_KEY
   if (!apiKey) {
     console.warn('[newsapi] NEWSDATA_API_KEY not set — skipping')
     return []
   }
 
-  const url = new URL('https://newsdata.io/api/1/news')
-  url.searchParams.set('apikey', apiKey)
-  url.searchParams.set('q', query)
-  url.searchParams.set('country', countries.join(','))
-  url.searchParams.set('language', language)
-  url.searchParams.set('category', 'politics,world,top')
+  const allArticles: NewsDataArticle[] = []
+  const seenIds = new Set<string>()
 
-  try {
-    const res = await fetch(url.toString(), {
-      headers: { 'User-Agent': 'relocant.help/1.0' },
-      next: { revalidate: 0 },
-      signal: AbortSignal.timeout(15000),
-    })
+  for (const query of SEARCH_QUERIES) {
+    try {
+      const params = new URLSearchParams({
+        apikey: apiKey,
+        q: query,
+        language: 'en,uk,ru,pl,sk,de,cs',
+        timeframe: '24',
+        size: '10',
+      })
 
-    if (!res.ok) {
-      console.error(`[newsapi] HTTP error: ${res.status}`)
-      return []
+      const res = await fetch(`${NEWSDATA_BASE}?${params}`, {
+        next: { revalidate: 0 },
+        signal: AbortSignal.timeout(15000),
+      })
+
+      if (!res.ok) {
+        console.error(`[newsapi] HTTP ${res.status} for query: ${query}`)
+        continue
+      }
+
+      const data = await res.json() as { status: string; results?: NewsDataArticle[] }
+
+      if (data.status !== 'success' || !data.results) {
+        console.error(`[newsapi] API error status: ${data.status}`)
+        continue
+      }
+
+      for (const article of data.results) {
+        if (article.article_id && !seenIds.has(article.article_id)) {
+          seenIds.add(article.article_id)
+          allArticles.push(article)
+        }
+      }
+
+      await new Promise(r => setTimeout(r, 1000))
+    } catch (err) {
+      console.error(`[newsapi] Query failed: ${query}`, err)
     }
-
-    const data = await res.json() as NewsDataResponse
-
-    if (data.status !== 'success') {
-      console.error(`[newsapi] API error: ${data.status}`)
-      return []
-    }
-
-    return data.results
-      .filter(item => item.link && item.title)
-      .map(item => ({
-        sourceId: 'newsdata-api',
-        url: item.link,
-        title: item.title ?? '',
-        content: item.content ?? item.description ?? '',
-        publishedAt: item.pubDate ?? undefined,
-        language: item.language ?? 'en',
-      }))
-  } catch (err) {
-    console.error('[newsapi] Fetch failed:', err)
-    return []
   }
+
+  return allArticles
+}
+
+const COUNTRY_MAP: Record<string, string> = {
+  sk: 'Slovakia',
+  pl: 'Poland',
+  de: 'Germany',
+  cz: 'Czech Republic',
+  es: 'Spain',
+  it: 'Italy',
+  ro: 'Romania',
+  bg: 'Bulgaria',
+  pt: 'Portugal',
+  tr: 'Turkey',
+  at: 'Austria',
+  nl: 'Netherlands',
+  fr: 'France',
+  gb: 'United Kingdom',
+  ua: 'Ukraine',
+}
+
+export function mapNewsDataCountry(countries: string[]): string {
+  for (const code of countries) {
+    if (COUNTRY_MAP[code]) return COUNTRY_MAP[code]
+  }
+  return 'European Union'
 }

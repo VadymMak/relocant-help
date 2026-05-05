@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
 import { getSources } from '@/lib/db/sources-config'
 import { getPrisma } from '@/lib/db'
-import { fetchNewsData } from './newsapi'
+import { fetchFromNewsData, mapNewsDataCountry } from './newsapi'
 import { verifyArticle } from '@/lib/vector/verify'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -349,20 +349,90 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
   let relevant = 0
   const errors: string[] = []
 
-  for (const source of sources) {
+  // ── Layer 1: NewsData.io API ───────────────────────────────
+  if (process.env.NEWSDATA_API_KEY) {
+    try {
+      const newsArticles = await fetchFromNewsData()
+
+      for (const article of newsArticles) {
+        const existing = await getPrisma().crawledArticle.findFirst({
+          where: {
+            OR: [
+              { url: article.link },
+              { originalTitle: article.title },
+            ],
+          },
+          select: { id: true },
+        })
+        if (existing) continue
+
+        const raw: RawArticle = {
+          sourceId: `newsdata-${article.source_id}`,
+          url: article.link,
+          title: article.title,
+          content: article.content || article.description || article.title,
+          publishedAt: article.pubDate,
+          language: article.language || 'en',
+        }
+
+        const newsSource: CrawlerSource = {
+          id: `newsdata-${article.source_id}`,
+          country: mapNewsDataCountry(article.country),
+          countryFlag: '🌍',
+          name: article.source_name ?? 'NewsData.io',
+          url: article.link,
+          language: article.language || 'en',
+          targetLanguages: ['uk', 'ru'],
+          tags: article.keywords ?? ['migration'],
+          checkIntervalHours: 24,
+          active: true,
+        }
+
+        const result = await processWithClaude(raw, newsSource)
+        processed++
+
+        if (result && result.isRelevant) {
+          relevant++
+          await getPrisma().crawledArticle.create({
+            data: {
+              sourceId: result.sourceId,
+              url: result.url,
+              originalTitle: result.originalTitle,
+              originalContent: result.originalContent?.slice(0, 10000),
+              originalLanguage: result.originalLanguage,
+              titleUk: result.titleUk,
+              titleRu: result.titleRu,
+              summaryUk: result.summaryUk,
+              summaryRu: result.summaryRu,
+              fullTextUk: result.fullTextUk,
+              fullTextRu: result.fullTextRu,
+              tags: result.tags,
+              relevanceScore: result.relevanceScore,
+              country: result.country,
+              status: result.status,
+              publishedAt: result.publishedAt ? new Date(result.publishedAt) : new Date(),
+            },
+          })
+        }
+
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      errors.push(`newsdata: ${message}`)
+    }
+  }
+
+  // ── Layer 2 + 3: RSS feeds and scraping ───────────────────
+  // Skip newsapi-type sources — handled by Layer 1 above
+  const scrapeableSources = sources.filter(s => s.type !== 'newsapi')
+
+  for (const source of scrapeableSources) {
     try {
       let rawArticles: RawArticle[] = []
 
-      // ── Layer 1: NewsData.io API ───────────────────────────
-      if (source.type === 'newsapi') {
-        rawArticles = await fetchNewsData(
-          'Ukraine OR Ukrainian OR refugee OR "temporary protection" OR migration',
-          ['sk', 'pl', 'de', 'cz', 'at', 'hu', 'ro', 'bg', 'hr', 'si'],
-          'en'
-        )
-
       // ── Layer 2: RSS / Atom feeds ──────────────────────────
-      } else if (source.rssUrl) {
+      if (source.rssUrl) {
         rawArticles = await fetchRSS(source.rssUrl)
 
       // ── Layer 3: Scrape + link extraction ─────────────────
