@@ -46,17 +46,32 @@ export async function fetchRSS(url: string): Promise<RawArticle[]> {
   const xml = await res.text()
   const items: RawArticle[] = []
 
-  const itemMatches = xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/g)
-  for (const match of itemMatches) {
+  // Handle both <item> (RSS) and <entry> (Atom)
+  const rssMatches = xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/g)
+  const atomMatches = xml.matchAll(/<entry[^>]*>([\s\S]*?)<\/entry>/g)
+
+  for (const match of [...rssMatches, ...atomMatches]) {
     const item = match[1]
+
     const title =
-      item.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/title>|<title[^>]*>([\s\S]*?)<\/title>/)?.[1] ?? ''
+      item.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ??
+      item.match(/<title[^>]*>([^<]+)<\/title>/)?.[1] ?? ''
+
+    // Atom uses <link href="..."/>, RSS uses <link>url</link>
     const link =
+      item.match(/<link[^>]+href=["']([^"']+)["']/)?.[1] ??
       item.match(/<link[^>]*>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? ''
+
     const desc =
-      item.match(/<description[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/description>|<description[^>]*>([\s\S]*?)<\/description>/)?.[1] ?? ''
+      item.match(/<description[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/description>/)?.[1] ??
+      item.match(/<description[^>]*>([^<]*)<\/description>/)?.[1] ??
+      item.match(/<content[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/content>/)?.[1] ??
+      item.match(/<summary[^>]*>([^<]*)<\/summary>/)?.[1] ?? ''
+
     const pubDate =
-      item.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/)?.[1] ?? ''
+      item.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/)?.[1] ??
+      item.match(/<published[^>]*>([\s\S]*?)<\/published>/)?.[1] ??
+      item.match(/<updated[^>]*>([\s\S]*?)<\/updated>/)?.[1] ?? ''
 
     if (title && link) {
       items.push({
@@ -81,13 +96,7 @@ export async function fetchPage(url: string): Promise<RawArticle[]> {
   if (!res.ok) throw new Error(`Page fetch failed: ${res.status} ${url}`)
   const html = await res.text()
 
-  const text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 8000)
+  const text = extractText(html)
 
   return [{
     sourceId: '',
@@ -96,6 +105,41 @@ export async function fetchPage(url: string): Promise<RawArticle[]> {
     content: text,
     language: 'unknown',
   }]
+}
+
+// ── Step 2b: Enrich RSS item with full page content ────────
+async function enrichWithFullPage(article: RawArticle): Promise<RawArticle> {
+  if (article.content.length >= 100) return article
+
+  try {
+    const res = await fetch(article.url, {
+      headers: { 'User-Agent': 'relocant.help/1.0' },
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) return article
+    const html = await res.text()
+    const fullText = extractText(html)
+    if (fullText.length > article.content.length) {
+      return { ...article, content: fullText }
+    }
+  } catch {
+    // Fall back to RSS description if page fetch fails
+  }
+  return article
+}
+
+function extractText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<header[\s\S]*?<\/header>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 8000)
 }
 
 // ── Step 3: Claude AI filters and translates ───────────────
@@ -107,7 +151,7 @@ export async function processWithClaude(
 
   const prompt = `You are an assistant helping Ukrainian and Russian-speaking relocants in Europe.
 
-Analyze this article from a government website and respond with ONLY valid JSON (no markdown, no explanation).
+Analyze this article from a government or international organization website and respond with ONLY valid JSON (no markdown, no explanation).
 
 SOURCE: ${source.name} (${source.country})
 ARTICLE TITLE: ${article.title}
@@ -133,10 +177,29 @@ Respond with this exact JSON structure:
   }
 }
 
-An article IS relevant if it mentions: ${keywordsStr}
-An article is NOT relevant if it's about: local politics, sports, culture unrelated to foreigners, general news.
+RELEVANCE SCORING — be generous, the audience is Ukrainian/Russian relocants in Europe:
 
-Relevance score: 80+ = publish immediately, 50-79 = review needed, below 50 = skip.`
+Score 60-100 (RELEVANT — save for review):
+- Directly mentions Ukraine, Ukrainians, Russian speakers, or displaced persons
+- Covers residence permits, temporary protection, visas, registration
+- Covers work permits, employment rights, taxes, social insurance
+- Covers housing, social benefits, healthcare access for migrants
+- Covers asylum, refugee status, migration policy changes
+- Any change in law or procedure that affects foreigners in EU countries
+- Integration programs, language courses, recognition of qualifications
+
+Score 30-59 (POSSIBLY RELEVANT — save but auto-reject):
+- General migration/asylum news that may affect relocants indirectly
+- EU policy changes that could affect foreigners
+- Economic news relevant to immigrants (minimum wage, benefits changes)
+
+Score 0-29 (NOT RELEVANT — skip):
+- Purely local/domestic news with no foreign dimension
+- Sports, culture, entertainment unrelated to integration
+- Political commentary not affecting foreigners' legal status
+- Administrative news irrelevant to daily life of relocants
+
+Keywords indicating relevance: ${keywordsStr}`
 
   try {
     const response = await anthropic.messages.create({
@@ -146,7 +209,11 @@ Relevance score: 80+ = publish immediately, 50-79 = review needed, below 50 = sk
     })
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
-    const parsed = JSON.parse(text) as {
+
+    // Strip markdown code fences if Claude wraps response in them
+    const jsonText = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+
+    const parsed = JSON.parse(jsonText) as {
       isRelevant: boolean
       relevanceScore: number
       tags: string[]
@@ -155,6 +222,8 @@ Relevance score: 80+ = publish immediately, 50-79 = review needed, below 50 = sk
         ru?: { title?: string; summary?: string; fullText?: string }
       }
     }
+
+    const score = parsed.relevanceScore ?? 0
 
     return {
       sourceId: source.id,
@@ -169,11 +238,12 @@ Relevance score: 80+ = publish immediately, 50-79 = review needed, below 50 = sk
       fullTextUk: parsed.translations?.uk?.fullText,
       fullTextRu: parsed.translations?.ru?.fullText,
       tags: [...(parsed.tags ?? []), ...source.tags],
-      relevanceScore: parsed.relevanceScore ?? 0,
-      isRelevant: parsed.isRelevant && parsed.relevanceScore >= 50,
+      relevanceScore: score,
+      isRelevant: score >= 30,
       country: source.country,
       publishedAt: article.publishedAt,
-      status: parsed.relevanceScore >= 80 ? 'pending_review' : 'rejected',
+      // 60+ goes to pending_review for human check, 30-59 auto-rejected but saved
+      status: score >= 60 ? 'pending_review' : 'rejected',
     }
   } catch (e) {
     console.error('Claude processing failed:', e)
@@ -219,7 +289,10 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
         })
         if (existing) continue
 
-        const article = await processWithClaude(raw, source)
+        // Enrich RSS items that only have a short description
+        const enriched = source.rssUrl ? await enrichWithFullPage(raw) : raw
+
+        const article = await processWithClaude(enriched, source)
         processed++
 
         if (article && article.isRelevant) {
