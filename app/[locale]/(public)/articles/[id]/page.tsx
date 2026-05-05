@@ -1,7 +1,17 @@
 import { notFound } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, getLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import { mockArticles } from '@/lib/mock-articles'
+import { getPrisma } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
+
+const COUNTRY_FLAG: Record<string, string> = {
+  Slovakia: '🇸🇰',
+  Poland: '🇵🇱',
+  Germany: '🇩🇪',
+  'Czech Republic': '🇨🇿',
+  'European Union': '🇪🇺',
+}
 
 interface Props {
   params: Promise<{ locale: string; id: string }>
@@ -61,12 +71,43 @@ function renderFullText(text: string) {
 
 export default async function ArticlePage({ params }: Props) {
   const { id } = await params
-  const t = await getTranslations('articles')
+  const [t, locale] = await Promise.all([getTranslations('articles'), getLocale()])
 
-  const article = mockArticles.find(a => a.id === id)
-  if (!article) notFound()
+  console.log('[ArticlePage] id:', id, 'locale:', locale)
 
-  const related = mockArticles.filter(a => a.id !== id).slice(0, 3)
+  type DbArticle = Awaited<ReturnType<typeof getPrisma['prototype']['crawledArticle']['findFirst']>>
+  let article: NonNullable<DbArticle> | null = null
+  let related: NonNullable<DbArticle>[] = []
+
+  try {
+    article = await getPrisma().crawledArticle.findFirst({
+      where: { id, status: 'approved' },
+    })
+
+    console.log('[ArticlePage] article found:', article ? article.id : null)
+
+    if (!article) {
+      notFound()
+    }
+
+    related = await getPrisma().crawledArticle.findMany({
+      where: { status: 'approved', id: { not: id } },
+      orderBy: { publishedAt: 'desc' },
+      take: 3,
+    })
+  } catch (err) {
+    console.error('[ArticlePage] DB error:', err)
+    throw new Error('Failed to load article. Please try again later.')
+  }
+
+  const isRu = locale === 'ru'
+  const title = (isRu ? article.titleRu : article.titleUk) ?? article.originalTitle
+  const fullText = (isRu ? article.fullTextRu : article.fullTextUk) ?? ''
+  const flag = COUNTRY_FLAG[article.country] ?? '🌍'
+  const tag = article.tags[0] ?? ''
+  const dateStr = article.publishedAt?.toLocaleDateString(isRu ? 'ru-RU' : 'uk-UA', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  }) ?? ''
 
   return (
     <main>
@@ -82,23 +123,25 @@ export default async function ArticlePage({ params }: Props) {
               background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.9)',
               borderRadius: 'var(--rh-radius-pill)', padding: '4px 12px', fontSize: 12, fontWeight: 500,
             }}>
-              {article.flag} {article.country}
+              {flag} {article.country}
             </span>
-            <span style={{
-              background: 'rgba(29,158,117,0.25)', color: '#5de0b3',
-              borderRadius: 'var(--rh-radius-pill)', padding: '4px 12px', fontSize: 12, fontWeight: 600,
-            }}>
-              {article.tag}
-            </span>
+            {tag && (
+              <span style={{
+                background: 'rgba(29,158,117,0.25)', color: '#5de0b3',
+                borderRadius: 'var(--rh-radius-pill)', padding: '4px 12px', fontSize: 12, fontWeight: 600,
+              }}>
+                {tag}
+              </span>
+            )}
           </div>
 
           <h1 style={{ fontSize: 34, fontWeight: 700, margin: '0 0 20px', lineHeight: 1.3, letterSpacing: '-0.02em', maxWidth: 800 }}>
-            {article.title}
+            {title}
           </h1>
 
           <div style={{ display: 'flex', gap: 20, fontSize: 13, color: 'rgba(255,255,255,0.55)', flexWrap: 'wrap' }}>
-            <span>{t('published')}: {article.date}</span>
-            <span>{t('source')}: {article.source}</span>
+            <span>{t('published')}: {dateStr}</span>
+            <span>{t('source')}: {article.sourceId}</span>
           </div>
         </div>
       </section>
@@ -112,7 +155,11 @@ export default async function ArticlePage({ params }: Props) {
               borderRadius: 'var(--rh-radius-lg)', padding: '36px 40px',
               boxShadow: 'var(--rh-shadow-xs)',
             }}>
-              {renderFullText(article.fullText)}
+              {fullText ? renderFullText(fullText) : (
+                <p style={{ color: 'var(--rh-fg-2)', fontSize: 15 }}>
+                  {(isRu ? article.summaryRu : article.summaryUk) ?? ''}
+                </p>
+              )}
 
               <div style={{
                 marginTop: 36, paddingTop: 24,
@@ -120,10 +167,10 @@ export default async function ArticlePage({ params }: Props) {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <div style={{ fontSize: 13, color: 'var(--rh-fg-3)' }}>
-                  {t('source')}: {article.source}
+                  {t('source')}: {article.sourceId}
                 </div>
                 <a
-                  href={article.sourceUrl}
+                  href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -143,40 +190,50 @@ export default async function ArticlePage({ params }: Props) {
               {t('relatedTitle')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {related.map(rel => (
-                <Link
-                  key={rel.id}
-                  href={`/articles/${rel.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div style={{
-                    background: 'white', border: '1px solid var(--rh-border)',
-                    borderRadius: 'var(--rh-radius-md)', padding: '16px 18px',
-                    boxShadow: 'var(--rh-shadow-xs)',
-                  }}>
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-                      <span style={{
-                        background: 'var(--rh-bg-2)', color: 'var(--rh-fg-2)',
-                        borderRadius: 'var(--rh-radius-pill)', padding: '2px 8px', fontSize: 11, fontWeight: 500,
-                      }}>
-                        {rel.flag} {rel.country}
-                      </span>
-                      <span style={{
-                        background: 'rgba(29,158,117,0.1)', color: 'var(--rh-teal)',
-                        borderRadius: 'var(--rh-radius-pill)', padding: '2px 8px', fontSize: 11, fontWeight: 600,
-                      }}>
-                        {rel.tag}
-                      </span>
+              {related.map(rel => {
+                const relTitle = (isRu ? rel?.titleRu : rel?.titleUk) ?? rel?.originalTitle ?? ''
+                const relFlag = COUNTRY_FLAG[rel?.country ?? ''] ?? '🌍'
+                const relTag = rel?.tags[0] ?? ''
+                const relDate = rel?.publishedAt?.toLocaleDateString(isRu ? 'ru-RU' : 'uk-UA', {
+                  day: 'numeric', month: 'short', year: 'numeric',
+                }) ?? ''
+                return (
+                  <Link
+                    key={rel?.id}
+                    href={`/articles/${rel?.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div style={{
+                      background: 'white', border: '1px solid var(--rh-border)',
+                      borderRadius: 'var(--rh-radius-md)', padding: '16px 18px',
+                      boxShadow: 'var(--rh-shadow-xs)',
+                    }}>
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                        <span style={{
+                          background: 'var(--rh-bg-2)', color: 'var(--rh-fg-2)',
+                          borderRadius: 'var(--rh-radius-pill)', padding: '2px 8px', fontSize: 11, fontWeight: 500,
+                        }}>
+                          {relFlag} {rel?.country}
+                        </span>
+                        {relTag && (
+                          <span style={{
+                            background: 'rgba(29,158,117,0.1)', color: 'var(--rh-teal)',
+                            borderRadius: 'var(--rh-radius-pill)', padding: '2px 8px', fontSize: 11, fontWeight: 600,
+                          }}>
+                            {relTag}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: 'var(--rh-fg-1)', marginBottom: 8 }}>
+                        {relTitle}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--rh-fg-3)' }}>
+                        {relDate}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: 'var(--rh-fg-1)', marginBottom: 8 }}>
-                      {rel.title}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--rh-fg-3)' }}>
-                      {rel.date}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           </aside>
         </div>
