@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.gov.pl)",
+      "WebFetch(domain:www.employment.gov.sk)",
+      "WebFetch(domain:op.europa.eu)",
+      "WebFetch(domain:iom.sk)",
+      "WebFetch(domain:www.europarl.europa.eu)",
+      "WebFetch(domain:news.un.org)",
+      "WebFetch(domain:www.migrationpolicy.org)",
+      "WebFetch(domain:ecre.org)",
+      "WebFetch(domain:ec.europa.eu)",
+      "WebFetch(domain:reliefweb.int)",
+      "WebFetch(domain:euaa.europa.eu)",
+      "WebFetch(domain:www.mic.iom.sk)",
+      "WebFetch(domain:www.iom.sk)",
+      "WebFetch(domain:www.migrant.info.pl)",
+      "Bash(curl -sL -A \"relocant.help/1.0\" --max-time 8 \"https://euaa.europa.eu/category/press-releases/feed\")",
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://www.employment.gov.sk/rss.xml\")",
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://ecre.org/feed/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -A \"relocant.help/1.0\" --max-time 8 \"https://www.financnasprava.sk/en/pre-media/novinky\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -A \"relocant.help/1.0\" --max-time 8 \"https://www.infomigrants.net/en/feed\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -A \"relocant.help/1.0\" --max-time 8 \"https://www.infomigrants.net/rss\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -A \"relocant.help/1.0\" --max-time 8 \"https://www.infomigrants.net/en/feed.rss\")",
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/en/news/\")",
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://mic.iom.sk/en/all-news.html\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -A \"relocant.help/1.0\" --max-time 8 \"https://mic.iom.sk/en/all-news.feed?type=rss\")",
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://mic.iom.sk/en/all-news.feed?type=rss\")",
+      "Bash(grep -v \"^href=\\\\\"https://ipc.gov.cz/en/news/\\\\\"$\")",
+      "Bash(curl -s -A \"Mozilla/5.0\" --max-time 8 \"https://www.infomigrants.net\")",
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/wp-json/wp/v2/posts?lang=en&per_page=3\")",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/en/feed/\")",
+      "Bash(curl -s -A \"relocant.help/1.0\" --max-time 8 \"https://ipc.gov.cz/en/feed/\")"
+    ]
+  }
+}
