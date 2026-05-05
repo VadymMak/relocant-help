@@ -282,6 +282,16 @@ Score 0-19 (NOT RELEVANT — skip):
 - Crime, disasters unrelated to migrant issues
 - Administrative/organizational news irrelevant to daily life
 
+IMPORTANT: This article is ONLY relevant if it specifically mentions:
+- Ukrainian people / refugees / migrants
+- OR temporary protection status (TP / TPS)
+- OR residence permits for foreigners in Europe
+- OR social / legal rights for Ukrainian relocants
+
+Articles about OTHER refugee groups (Syrian, Afghan, African, Georgian) are NOT relevant — score 0-15.
+Articles about general European politics with no migration dimension are NOT relevant — score 0-15.
+Articles about conflicts, disasters, or crime unrelated to Ukrainian relocation are NOT relevant — score 0-15.
+
 Keywords indicating relevance: ${keywordsStr}`
 
   try {

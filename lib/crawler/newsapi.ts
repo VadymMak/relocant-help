@@ -15,9 +15,12 @@ export interface NewsDataArticle {
 const NEWSDATA_BASE = 'https://newsdata.io/api/1/news'
 
 const SEARCH_QUERIES = [
-  'Ukrainian refugees Europe residence',
-  'temporary protection Ukraine EU 2026',
-  'Ukrainian migrants Spain Italy Romania',
+  'Ukraine temporary protection Slovakia 2026',
+  'Ukrainian migrants Poland residence permit',
+  'Ukrainians Germany work permit 2026',
+  'temporary protection extension Europe Ukrainian',
+  'українці Словаччина 2026',
+  'Ukrainian refugees Spain Italy 2026',
 ]
 
 export async function fetchFromNewsData(): Promise<NewsDataArticle[]> {
@@ -34,12 +37,12 @@ export async function fetchFromNewsData(): Promise<NewsDataArticle[]> {
 
   for (const query of SEARCH_QUERIES) {
     try {
-      // Note: timeframe is a paid-plan-only param — omit for free plan
+      // timeframe is paid-plan only — omit; language filter too restrictive — omit
       const params = new URLSearchParams({
         apikey: apiKey,
         q: query,
-        language: 'en',
-        size: '10',
+        category: 'politics,world',
+        size: '5',
       })
 
       console.log(`[NewsData] Querying: "${query}"`)
