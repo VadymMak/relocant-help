@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { CRAWLER_SOURCES, RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
+import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
+import { getSources } from '@/lib/db/sources-config'
 import { getPrisma } from '@/lib/db'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -186,9 +187,10 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
   relevant: number
   errors: string[]
 }> {
+  const allSources = await getSources()
   const sources = sourceIds
-    ? CRAWLER_SOURCES.filter(s => sourceIds.includes(s.id) && s.active)
-    : CRAWLER_SOURCES.filter(s => s.active)
+    ? allSources.filter(s => sourceIds.includes(s.id) && s.active)
+    : allSources.filter(s => s.active)
 
   let processed = 0
   let relevant = 0
@@ -206,8 +208,14 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
       rawArticles = rawArticles.map(a => ({ ...a, sourceId: source.id, language: source.language }))
 
       for (const raw of rawArticles.slice(0, 10)) {
-        const existing = await getPrisma().crawledArticle.findUnique({
-          where: { url: raw.url },
+        const existing = await getPrisma().crawledArticle.findFirst({
+          where: {
+            OR: [
+              { url: raw.url },
+              { originalTitle: raw.title },
+            ],
+          },
+          select: { id: true },
         })
         if (existing) continue
 
