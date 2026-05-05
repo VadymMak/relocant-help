@@ -8,11 +8,15 @@ export const dynamic = 'force-dynamic'
 const COUNTRY_CODE: Record<string, string> = {
   Slovakia: 'SK', Poland: 'PL', Germany: 'DE',
   'Czech Republic': 'CZ', 'European Union': 'EU',
+  Spain: 'ES', Italy: 'IT', Romania: 'RO',
+  Bulgaria: 'BG', Portugal: 'PT', Turkey: 'TR',
 }
 
 const COUNTRY_FLAG: Record<string, string> = {
   Slovakia: '🇸🇰', Poland: '🇵🇱', Germany: '🇩🇪',
   'Czech Republic': '🇨🇿', 'European Union': '🇪🇺',
+  Spain: '🇪🇸', Italy: '🇮🇹', Romania: '🇷🇴',
+  Bulgaria: '🇧🇬', Portugal: '🇵🇹', Turkey: '🇹🇷',
 }
 
 type HomeArticle = {
@@ -34,6 +38,12 @@ const countryFilters = [
   { label: '🇩🇪 DE', code: 'DE' },
   { label: '🇨🇿 CZ', code: 'CZ' },
   { label: '🇪🇺 EU', code: 'EU' },
+  { label: '🇪🇸 ES', code: 'ES' },
+  { label: '🇮🇹 IT', code: 'IT' },
+  { label: '🇷🇴 RO', code: 'RO' },
+  { label: '🇧🇬 BG', code: 'BG' },
+  { label: '🇵🇹 PT', code: 'PT' },
+  { label: '🇹🇷 TR', code: 'TR' },
 ]
 
 export default async function HomePage() {

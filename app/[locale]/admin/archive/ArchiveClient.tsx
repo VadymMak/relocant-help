@@ -25,6 +25,12 @@ const COUNTRY_TABS = [
   { label: '🇩🇪 DE', code: 'DE' },
   { label: '🇨🇿 CZ', code: 'CZ' },
   { label: '🇪🇺 EU', code: 'EU' },
+  { label: '🇪🇸 ES', code: 'ES' },
+  { label: '🇮🇹 IT', code: 'IT' },
+  { label: '🇷🇴 RO', code: 'RO' },
+  { label: '🇧🇬 BG', code: 'BG' },
+  { label: '🇵🇹 PT', code: 'PT' },
+  { label: '🇹🇷 TR', code: 'TR' },
 ]
 
 interface Props {

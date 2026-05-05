@@ -200,6 +200,96 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     type: 'rss',
   },
 
+  // ── SPAIN ─────────────────────────────────────────────────
+  {
+    id: 'es-migraciones',
+    country: 'Spain',
+    countryFlag: '🇪🇸',
+    name: 'Ministerio de Inclusión - Migraciones',
+    url: 'https://www.inclusion.gob.es/en/web/migraciones/vivir-en-espana',
+    language: 'es',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['residence', 'Spain', 'migration', 'foreigners'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── ITALY ─────────────────────────────────────────────────
+  {
+    id: 'it-integrazione',
+    country: 'Italy',
+    countryFlag: '🇮🇹',
+    name: 'Portale Integrazione Migranti',
+    url: 'https://integrazionemigranti.gov.it/en-gb/',
+    language: 'it',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['residence', 'Italy', 'migration', 'Ukraine-emergency'],
+    checkIntervalHours: 24,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── ROMANIA ───────────────────────────────────────────────
+  {
+    id: 'ro-protectie',
+    country: 'Romania',
+    countryFlag: '🇷🇴',
+    name: 'Protectie Ucraina Romania',
+    url: 'https://protectieucraina.gov.ro/',
+    language: 'ro',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Ukraine', 'Romania', 'temporary-protection', 'refugees'],
+    checkIntervalHours: 24,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── BULGARIA ──────────────────────────────────────────────
+  {
+    id: 'bg-ukraine',
+    country: 'Bulgaria',
+    countryFlag: '🇧🇬',
+    name: 'Ukraine Bulgaria Official Portal',
+    url: 'https://ukraine.gov.bg/bg/',
+    language: 'bg',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Ukraine', 'Bulgaria', 'temporary-protection'],
+    checkIntervalHours: 24,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── TURKEY ────────────────────────────────────────────────
+  {
+    id: 'tr-goc',
+    country: 'Turkey',
+    countryFlag: '🇹🇷',
+    name: 'Göç İdaresi Genel Müdürlüğü',
+    url: 'https://www.goc.gov.tr/en',
+    language: 'tr',
+    targetLanguages: ['uk', 'ru', 'en'],
+    tags: ['Turkey', 'residence-permit', 'migration', 'foreigners'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── PORTUGAL ──────────────────────────────────────────────
+  {
+    id: 'pt-aima',
+    country: 'Portugal',
+    countryFlag: '🇵🇹',
+    name: 'AIMA - Agência para a Integração, Migrações e Asilo',
+    url: 'https://aima.gov.pt/en',
+    language: 'pt',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Portugal', 'residence', 'migration', 'asylum'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
   // ── EU / INTERNATIONAL ────────────────────────────────────
   {
     id: 'eu-commission',
@@ -284,4 +374,16 @@ export const RELEVANCE_KEYWORDS = [
   'Blue Card', 'aufenthaltserlaubnis', 'niederlassungserlaubnis',
   'housing', 'social benefits', 'language course', 'recognition',
   'qualification', 'war', 'conflict', 'relocation', 'relocant',
+  // Spanish
+  'ucrania', 'ucraniano', 'protección temporal', 'permiso de residencia',
+  // Italian
+  'ucraina', 'protezione temporanea', 'permesso di soggiorno',
+  // Romanian
+  'ucraina', 'protectie temporara', 'permis de sedere',
+  // Bulgarian
+  'украйна', 'временна закрила', 'разрешение за пребиваване',
+  // Turkish
+  'ukrayna', 'geçici koruma', 'ikamet', 'oturma izni',
+  // Portuguese
+  'portugal', 'autorização de residência', 'proteção temporária',
 ]
