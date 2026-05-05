@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import type { SearchArticle } from '@/app/api/search/route'
+import type { SearchArticle } from '@/lib/types/search'
 
 export interface ArticleCardData {
   id: string
