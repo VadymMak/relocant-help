@@ -4,7 +4,9 @@
     "articles": "Статті",
     "catalog": "Спеціалісти",
     "about": "Про нас",
-    "contact": "Контакти"
+    "contact": "Контакти",
+    "searchPlaceholder": "Шукати статті…",
+    "searchBtn": "Знайти"
   },
   "home": {
     "title": "Офіційні новини для релокантів у Європі",
@@ -53,7 +55,11 @@
     "relatedTitle": "Схожі статті",
     "published": "Опубліковано",
     "paginationPrev": "← Назад",
-    "paginationNext": "Далі →"
+    "paginationNext": "Далі →",
+    "searchPlaceholder": "Пошук за темою, країною, ключовими словами…",
+    "searchResults": "результатів за запитом",
+    "searchEmpty": "Нічого не знайдено. Спробуйте інший запит.",
+    "searchClear": "Скинути пошук"
   },
   "catalog": {
     "title": "Спеціалісти",
@@ -183,6 +189,14 @@
     "loginTitle": "Вхід в адмін",
     "loginPassword": "Пароль",
     "loginBtn": "Увійти",
-    "loginError": "Неправильний пароль"
+    "loginError": "Неправильний пароль",
+    "sidebarContent": "Контент",
+    "sidebarArchive": "Архів статей",
+    "comingSoonTitle": "Розділ в розробці",
+    "comingSoonDesc": "Буде доступний після активації модуля спеціалістів.",
+    "comingSoonBtn": "Увімкнути модуль",
+    "archiveTitle": "Архів статей",
+    "archiveSearch": "Пошук за заголовком…",
+    "archiveEmpty": "Немає статей"
   }
 }

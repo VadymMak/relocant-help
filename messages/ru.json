@@ -4,7 +4,9 @@
     "articles": "Статьи",
     "catalog": "Специалисты",
     "about": "О нас",
-    "contact": "Контакты"
+    "contact": "Контакты",
+    "searchPlaceholder": "Искать статьи…",
+    "searchBtn": "Найти"
   },
   "home": {
     "title": "Официальные новости для релокантов в Европе",
@@ -53,7 +55,11 @@
     "relatedTitle": "Похожие статьи",
     "published": "Опубликовано",
     "paginationPrev": "← Назад",
-    "paginationNext": "Далее →"
+    "paginationNext": "Далее →",
+    "searchPlaceholder": "Поиск по теме, стране, ключевым словам…",
+    "searchResults": "результатов по запросу",
+    "searchEmpty": "Ничего не найдено. Попробуйте другой запрос.",
+    "searchClear": "Сбросить поиск"
   },
   "catalog": {
     "title": "Специалисты",
@@ -183,6 +189,14 @@
     "loginTitle": "Вход в админ",
     "loginPassword": "Пароль",
     "loginBtn": "Войти",
-    "loginError": "Неверный пароль"
+    "loginError": "Неверный пароль",
+    "sidebarContent": "Контент",
+    "sidebarArchive": "Архив статей",
+    "comingSoonTitle": "Раздел в разработке",
+    "comingSoonDesc": "Будет доступен после активации модуля специалистов.",
+    "comingSoonBtn": "Включить модуль",
+    "archiveTitle": "Архив статей",
+    "archiveSearch": "Поиск по заголовку…",
+    "archiveEmpty": "Нет статей"
   }
 }

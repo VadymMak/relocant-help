@@ -4,7 +4,9 @@
     "articles": "Articles",
     "catalog": "Specialists",
     "about": "About",
-    "contact": "Contact"
+    "contact": "Contact",
+    "searchPlaceholder": "Search articles…",
+    "searchBtn": "Search"
   },
   "home": {
     "title": "Official news for relocants in Europe",
@@ -53,7 +55,11 @@
     "relatedTitle": "Related articles",
     "published": "Published",
     "paginationPrev": "← Prev",
-    "paginationNext": "Next →"
+    "paginationNext": "Next →",
+    "searchPlaceholder": "Search by topic, country, keywords…",
+    "searchResults": "results for",
+    "searchEmpty": "Nothing found. Try a different query.",
+    "searchClear": "Clear search"
   },
   "catalog": {
     "title": "Specialists",
@@ -183,6 +189,14 @@
     "loginTitle": "Admin login",
     "loginPassword": "Password",
     "loginBtn": "Sign in",
-    "loginError": "Wrong password"
+    "loginError": "Wrong password",
+    "sidebarContent": "Content",
+    "sidebarArchive": "Article archive",
+    "comingSoonTitle": "Section under development",
+    "comingSoonDesc": "Will be available after enabling the specialists module.",
+    "comingSoonBtn": "Enable module",
+    "archiveTitle": "Article archive",
+    "archiveSearch": "Search by title…",
+    "archiveEmpty": "No articles"
   }
 }
