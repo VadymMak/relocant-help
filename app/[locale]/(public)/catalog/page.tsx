@@ -44,7 +44,7 @@ export default function CatalogPage() {
       <section style={{ background: 'var(--rh-navy)', color: 'white', padding: '48px 24px 80px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 16 }}>
-            <a href="/" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>{t('breadcrumbHome')}</a>
+            <Link href="/" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>{t('breadcrumbHome')}</Link>
             {' · '}{t('title')}
           </div>
           <h1 style={{ fontSize: 36, fontWeight: 700, margin: '0 0 8px', letterSpacing: '-0.02em' }}>
@@ -220,10 +220,10 @@ export default function CatalogPage() {
                   €{spec.price}
                   <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--rh-fg-3)' }}>{t('perConsultation')}</div>
                 </div>
-                <Link href={`/catalog/${spec.id}` as any} className="rh-btn rh-btn-primary rh-btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
+                <Link href={`/catalog/${spec.id}`} className="rh-btn rh-btn-primary rh-btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
                   {t('bookBtn')}
                 </Link>
-                <Link href={`/catalog/${spec.id}` as any} className="rh-btn rh-btn-secondary rh-btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
+                <Link href={`/catalog/${spec.id}`} className="rh-btn rh-btn-secondary rh-btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
                   {t('viewProfile')}
                 </Link>
               </div>

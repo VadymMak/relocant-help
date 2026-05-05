@@ -92,7 +92,7 @@ export default function ArticlesPage() {
               {paged.map(article => (
                 <Link
                   key={article.id}
-                  href={`/articles/${article.id}` as any}
+                  href={`/articles/${article.id}`}
                   style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}
                 >
                   <div style={{

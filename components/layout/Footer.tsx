@@ -52,7 +52,7 @@ export default async function Footer() {
             { href: '/#how', label: t('howItWorks') },
             { href: '/#trust', label: t('verificationPolicy') },
           ].map(({ href, label }) => (
-            <Link key={href} href={href as any} style={{ display: 'block', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, padding: '6px 0' }}>
+            <Link key={href} href={href} style={{ display: 'block', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, padding: '6px 0' }}>
               {label}
             </Link>
           ))}

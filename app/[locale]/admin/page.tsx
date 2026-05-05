@@ -1,5 +1,4 @@
 import { useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
 
 const requests = [
   {
@@ -109,7 +108,7 @@ export default function AdminPage() {
             { label: t('metricsMatchRate'), value: '94%', trend: '↑ 2.1pt', up: true, color: 'var(--rh-teal-100)', iconColor: 'var(--rh-teal)' },
             { label: t('metricsAvgTime'), value: '11h', trend: '↓ 3h faster', up: false, color: 'var(--rh-warning-100)', iconColor: 'var(--rh-warning)' },
             { label: t('metricsGMV'), value: '€48.2k', trend: '↑ 24%', up: true, color: 'var(--rh-bg-alt)', iconColor: 'var(--rh-fg-2)' },
-          ].map(({ label, value, trend, up, color, iconColor }) => (
+          ].map(({ label, value, trend, up }) => (
             <div key={label} style={{
               background: 'white', border: '1px solid var(--rh-border)',
               borderRadius: 'var(--rh-radius-lg)', padding: 20,

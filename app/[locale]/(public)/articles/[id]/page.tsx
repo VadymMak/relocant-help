@@ -146,7 +146,7 @@ export default async function ArticlePage({ params }: Props) {
               {related.map(rel => (
                 <Link
                   key={rel.id}
-                  href={`/articles/${rel.id}` as any}
+                  href={`/articles/${rel.id}`}
                   style={{ textDecoration: 'none', color: 'inherit' }}
                 >
                   <div style={{
