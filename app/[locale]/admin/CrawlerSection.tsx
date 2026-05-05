@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 
@@ -30,6 +30,8 @@ export default function CrawlerSection({ lastRun, stats }: Props) {
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<RunResult | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
+  const [showBanner, setShowBanner] = useState(false)
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function handleRun() {
     setRunning(true)
@@ -48,8 +50,13 @@ export default function CrawlerSection({ lastRun, stats }: Props) {
         setRunError(data.error ?? 'Unknown error')
       } else {
         setResult(data)
+        setShowBanner(true)
+        if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+        bannerTimerRef.current = setTimeout(() => setShowBanner(false), 5000)
+        await fetch('/api/admin/revalidate', { method: 'POST' })
         router.refresh()
-        setTimeout(() => router.refresh(), 500)
+        setTimeout(() => router.refresh(), 1000)
+        setTimeout(() => window.location.reload(), 2000)
       }
     } catch {
       setRunError('Network error')
@@ -57,6 +64,8 @@ export default function CrawlerSection({ lastRun, stats }: Props) {
       setRunning(false)
     }
   }
+
+  useEffect(() => () => { if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current) }, [])
 
   const lastRunDate = lastRun?.createdAt
     ? new Date(lastRun.createdAt).toLocaleString('uk-UA', {
@@ -133,15 +142,29 @@ export default function CrawlerSection({ lastRun, stats }: Props) {
         ))}
       </div>
 
-      {/* Run result */}
-      {result && (
+      {/* Success banner */}
+      {result && showBanner && (
         <div style={{
-          background: 'var(--rh-teal-100)', borderRadius: 'var(--rh-radius-md)',
-          padding: '12px 16px', display: 'flex', gap: 24, fontSize: 13,
+          background: 'var(--rh-teal-100)', border: '1px solid var(--rh-teal)',
+          borderRadius: 'var(--rh-radius-md)', padding: '14px 18px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 16, fontSize: 14,
         }}>
-          <span><strong style={{ color: 'var(--rh-teal-700)' }}>{result.processed}</strong> {t('crawlerProcessed')}</span>
-          <span><strong style={{ color: 'var(--rh-teal-700)' }}>{result.relevant}</strong> {t('crawlerRelevant')}</span>
-          <span><strong style={{ color: result.errors.length > 0 ? 'var(--rh-warning)' : 'var(--rh-teal-700)' }}>{result.errors.length}</strong> {t('crawlerErrors')}</span>
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--rh-teal-700)', marginBottom: 3 }}>
+              ✓ Знайдено {result.relevant} нових статей.
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--rh-teal-700)', opacity: 0.85 }}>
+              {t('crawlerProcessed')}: {result.processed} · {t('crawlerErrors')}: {result.errors.length} · Сторінка оновиться автоматично…
+            </div>
+          </div>
+          <button
+            onClick={() => setShowBanner(false)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--rh-teal-700)', fontSize: 18, lineHeight: 1, padding: '0 4px',
+            }}
+          >×</button>
         </div>
       )}
 
