@@ -163,6 +163,26 @@
     "sidebarVerifications": "Верифікації",
     "sidebarReviews": "Відгуки",
     "sidebarSettings": "Налаштування",
-    "sidebarConfig": "Конфігурація"
+    "sidebarConfig": "Конфігурація",
+    "crawlerTitle": "Crawler",
+    "crawlerRunBtn": "Запустити Crawler",
+    "crawlerRunning": "Запускається...",
+    "crawlerLastRun": "Останній запуск",
+    "crawlerNeverRun": "Ніколи",
+    "crawlerProcessed": "Оброблено",
+    "crawlerRelevant": "Релевантних",
+    "crawlerErrors": "Помилок",
+    "crawlerPending": "Очікують",
+    "crawlerApproved": "Опубліковано",
+    "crawlerRejected": "Відхилено",
+    "tabPending": "Очікують",
+    "tabApproved": "Опубліковані",
+    "tabRejected": "Відхилені",
+    "articlesEmpty": "Немає статей",
+    "articlesEmptyPending": "Немає статей на перевірці. Запустіть crawler для пошуку нових статей.",
+    "loginTitle": "Вхід в адмін",
+    "loginPassword": "Пароль",
+    "loginBtn": "Увійти",
+    "loginError": "Неправильний пароль"
   }
 }

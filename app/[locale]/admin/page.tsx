@@ -1,4 +1,8 @@
-import { useTranslations } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
+import { getPrisma } from '@/lib/db'
+import CrawlerSection from './CrawlerSection'
+
+export const dynamic = 'force-dynamic'
 
 const requests = [
   {
@@ -43,8 +47,22 @@ const requests = [
   },
 ]
 
-export default function AdminPage() {
-  const t = useTranslations('admin')
+export default async function AdminPage() {
+  const t = await getTranslations('admin')
+
+  const [pending, approved, rejected, lastRun] = await Promise.all([
+    getPrisma().crawledArticle.count({ where: { status: 'pending_review' } }),
+    getPrisma().crawledArticle.count({ where: { status: 'approved' } }),
+    getPrisma().crawledArticle.count({ where: { status: 'rejected' } }),
+    getPrisma().crawlerLog.findFirst({ orderBy: { runAt: 'desc' } }),
+  ])
+
+  const lastRunSerialized = lastRun ? {
+    createdAt: lastRun.runAt?.toISOString() ?? null,
+    status: lastRun.status,
+    articlesFound: lastRun.articlesFound,
+    articlesRelevant: lastRun.articlesRelevant,
+  } : null
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh', background: 'var(--rh-bg)' }}>
@@ -69,17 +87,18 @@ export default function AdminPage() {
         </div>
 
         <SidebarSection label={t('sidebarOperations')} />
-        <SidebarLink icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h18v6H3zM3 11h18v10H3z"/></svg>} label={t('sidebarDashboard')} active />
-        <SidebarLink icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>} label={t('sidebarRequests')} badge="12" />
-        <SidebarLink icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>} label={t('sidebarSpecialists')} />
-        <SidebarLink icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>} label={t('sidebarBookings')} />
+        <SidebarLink href="/admin" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h18v6H3zM3 11h18v10H3z"/></svg>} label={t('sidebarDashboard')} active />
+        <SidebarLink href="/admin/articles" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>} label={t('articles')} badge={pending > 0 ? String(pending) : undefined} />
+        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>} label={t('sidebarRequests')} badge="12" />
+        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>} label={t('sidebarSpecialists')} />
+        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>} label={t('sidebarBookings')} />
 
         <SidebarSection label={t('sidebarNetwork')} />
-        <SidebarLink icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} label={t('sidebarVerifications')} />
-        <SidebarLink icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>} label={t('sidebarReviews')} />
+        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} label={t('sidebarVerifications')} />
+        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>} label={t('sidebarReviews')} />
 
         <SidebarSection label={t('sidebarSettings')} />
-        <SidebarLink icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9"/></svg>} label={t('sidebarConfig')} />
+        <SidebarLink href="#" icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9"/></svg>} label={t('sidebarConfig')} />
       </aside>
 
       {/* Main */}
@@ -104,10 +123,10 @@ export default function AdminPage() {
         {/* Metrics */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
           {[
-            { label: t('metricsRequests'), value: '186', trend: '↑ 18%', up: true, color: 'var(--rh-blue-100)', iconColor: 'var(--rh-blue)' },
-            { label: t('metricsMatchRate'), value: '94%', trend: '↑ 2.1pt', up: true, color: 'var(--rh-teal-100)', iconColor: 'var(--rh-teal)' },
-            { label: t('metricsAvgTime'), value: '11h', trend: '↓ 3h faster', up: false, color: 'var(--rh-warning-100)', iconColor: 'var(--rh-warning)' },
-            { label: t('metricsGMV'), value: '€48.2k', trend: '↑ 24%', up: true, color: 'var(--rh-bg-alt)', iconColor: 'var(--rh-fg-2)' },
+            { label: t('metricsRequests'), value: '186', trend: '↑ 18%', up: true },
+            { label: t('metricsMatchRate'), value: '94%', trend: '↑ 2.1pt', up: true },
+            { label: t('metricsAvgTime'), value: '11h', trend: '↓ 3h faster', up: false },
+            { label: t('metricsGMV'), value: '€48.2k', trend: '↑ 24%', up: true },
           ].map(({ label, value, trend, up }) => (
             <div key={label} style={{
               background: 'white', border: '1px solid var(--rh-border)',
@@ -120,6 +139,12 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
+
+        {/* Crawler section */}
+        <CrawlerSection
+          lastRun={lastRunSerialized}
+          stats={{ pending, approved, rejected }}
+        />
 
         {/* Two-col layout */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24 }}>
@@ -218,7 +243,7 @@ export default function AdminPage() {
                           <span style={{
                             background: 'var(--rh-teal-100)', color: 'var(--rh-teal-700)',
                             padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                          }}>✓ {req.matchedTo}</span>
+                          }}>✓ {(req as typeof req & { matchedTo?: string }).matchedTo}</span>
                         ) : (
                           <button style={{
                             background: 'var(--rh-blue)', color: 'white', border: 0,
@@ -293,9 +318,9 @@ function SidebarSection({ label }: { label: string }) {
   )
 }
 
-function SidebarLink({ icon, label, active, badge }: { icon: React.ReactNode; label: string; active?: boolean; badge?: string }) {
+function SidebarLink({ href, icon, label, active, badge }: { href: string; icon: React.ReactNode; label: string; active?: boolean; badge?: string }) {
   return (
-    <a style={{
+    <a href={href} style={{
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '10px 20px', cursor: 'pointer', textDecoration: 'none',
       color: active ? 'white' : 'rgba(255,255,255,0.65)',

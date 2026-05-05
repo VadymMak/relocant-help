@@ -163,6 +163,26 @@
     "sidebarVerifications": "Verifications",
     "sidebarReviews": "Reviews",
     "sidebarSettings": "Settings",
-    "sidebarConfig": "Configuration"
+    "sidebarConfig": "Configuration",
+    "crawlerTitle": "Crawler",
+    "crawlerRunBtn": "Run Crawler Now",
+    "crawlerRunning": "Running...",
+    "crawlerLastRun": "Last run",
+    "crawlerNeverRun": "Never",
+    "crawlerProcessed": "Processed",
+    "crawlerRelevant": "Relevant",
+    "crawlerErrors": "Errors",
+    "crawlerPending": "Pending",
+    "crawlerApproved": "Approved",
+    "crawlerRejected": "Rejected",
+    "tabPending": "Pending",
+    "tabApproved": "Approved",
+    "tabRejected": "Rejected",
+    "articlesEmpty": "No articles",
+    "articlesEmptyPending": "No articles pending review. Run the crawler to find new articles.",
+    "loginTitle": "Admin login",
+    "loginPassword": "Password",
+    "loginBtn": "Sign in",
+    "loginError": "Wrong password"
   }
 }

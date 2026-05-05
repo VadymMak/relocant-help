@@ -163,6 +163,26 @@
     "sidebarVerifications": "Верификации",
     "sidebarReviews": "Отзывы",
     "sidebarSettings": "Настройки",
-    "sidebarConfig": "Конфигурация"
+    "sidebarConfig": "Конфигурация",
+    "crawlerTitle": "Crawler",
+    "crawlerRunBtn": "Запустить Crawler",
+    "crawlerRunning": "Запускается...",
+    "crawlerLastRun": "Последний запуск",
+    "crawlerNeverRun": "Никогда",
+    "crawlerProcessed": "Обработано",
+    "crawlerRelevant": "Релевантных",
+    "crawlerErrors": "Ошибок",
+    "crawlerPending": "Ожидают",
+    "crawlerApproved": "Опубликовано",
+    "crawlerRejected": "Отклонено",
+    "tabPending": "Ожидают",
+    "tabApproved": "Опубликованные",
+    "tabRejected": "Отклонённые",
+    "articlesEmpty": "Нет статей",
+    "articlesEmptyPending": "Нет статей на проверке. Запустите crawler для поиска новых статей.",
+    "loginTitle": "Вход в админ",
+    "loginPassword": "Пароль",
+    "loginBtn": "Войти",
+    "loginError": "Неверный пароль"
   }
 }
