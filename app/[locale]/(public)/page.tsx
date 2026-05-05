@@ -77,7 +77,7 @@ export default async function HomePage() {
   return (
     <main>
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section style={{
+      <section className="rh-hero-section" style={{
         background: `
           radial-gradient(ellipse 80% 60% at 80% 0%, rgba(24,95,165,0.35), transparent 60%),
           radial-gradient(ellipse 60% 50% at 0% 100%, rgba(29,158,117,0.18), transparent 60%),
@@ -102,13 +102,13 @@ export default async function HomePage() {
         }} />
 
         <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <h1 style={{
+          <h1 className="rh-hero-title" style={{
             fontSize: 52, fontWeight: 800, lineHeight: 1.08,
             letterSpacing: '-0.025em', margin: '0 0 20px', color: 'white',
           }}>
             {t('title')}
           </h1>
-          <p style={{ fontSize: 19, lineHeight: 1.6, color: 'rgba(255,255,255,0.72)', margin: '0 0 40px' }}>
+          <p className="rh-hero-subtitle" style={{ fontSize: 19, lineHeight: 1.6, color: 'rgba(255,255,255,0.72)', margin: '0 0 40px' }}>
             {t('subtitle')}
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -146,7 +146,7 @@ export default async function HomePage() {
         position: 'relative', zIndex: 2,
         boxShadow: 'var(--rh-shadow-md)',
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '32px 16px' }}>
+        <div className="rh-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '32px 16px' }}>
           {[
             { num: '200+', label: t('statsArticles') },
             { num: '8', label: t('statsCountries'), accent: true },
@@ -199,6 +199,40 @@ export default async function HomePage() {
           .rh-news-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.13); border-color: var(--rh-blue) !important; }
           .rh-news-card-featured:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
           .rh-news-card-link { text-decoration: none; color: inherit; display: block; }
+
+          /* Article grid — 1 col mobile, 2 tablet, 3 desktop */
+          .rh-articles-grid { grid-template-columns: 1fr; }
+          .rh-featured-span { grid-column: span 1 !important; }
+          @media (min-width: 640px) {
+            .rh-articles-grid { grid-template-columns: 1fr 1fr; }
+            .rh-featured-span { grid-column: span 2 !important; }
+          }
+          @media (min-width: 1024px) {
+            .rh-articles-grid { grid-template-columns: 1fr 1fr 1fr; }
+            .rh-featured-span { grid-column: span 2 !important; }
+          }
+
+          /* How it works — 1 col mobile, 2 tablet, 3 desktop */
+          .rh-how-grid { grid-template-columns: 1fr; }
+          @media (min-width: 640px) { .rh-how-grid { grid-template-columns: 1fr 1fr; } }
+          @media (min-width: 1024px) { .rh-how-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+          /* Trust section — 1 col mobile, 2 col otherwise */
+          .rh-trust-grid { grid-template-columns: 1fr; }
+          @media (min-width: 640px) { .rh-trust-grid { grid-template-columns: 1fr 1fr; } }
+          @media (min-width: 1024px) { .rh-trust-grid { grid-template-columns: repeat(4, 1fr); } }
+
+          /* Stats bar — 2×2 on mobile, 4 cols on tablet+ */
+          @media (max-width: 639px) {
+            .rh-stats-grid { grid-template-columns: 1fr 1fr !important; }
+          }
+
+          /* Hero — reduce padding and font size on mobile */
+          @media (max-width: 639px) {
+            .rh-hero-section { padding: 56px 16px 96px !important; }
+            .rh-hero-title { font-size: 32px !important; }
+            .rh-hero-subtitle { font-size: 16px !important; }
+          }
         `}</style>
 
         {articles.length === 0 ? (
@@ -210,7 +244,7 @@ export default async function HomePage() {
             No articles yet. Run the crawler to fetch news.
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div className="rh-articles-grid" style={{ display: 'grid', gap: 20 }}>
             {articles.map(article => (
               article.featured ? (
                 <FeaturedArticleCard key={article.id} article={article} readMore={t('readMore')} />
@@ -231,7 +265,7 @@ export default async function HomePage() {
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.65)', margin: '0 0 40px' }}>
             {t('howDesc')}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          <div className="rh-how-grid" style={{ display: 'grid', gap: 24 }}>
             {[
               { num: '1', title: t('step1Title'), desc: t('step1Desc'),
                 icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> },
@@ -266,7 +300,7 @@ export default async function HomePage() {
           <p style={{ fontSize: 16, color: 'var(--rh-fg-2)', margin: '0 0 40px' }}>
             {t('trustDesc')}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+          <div className="rh-trust-grid" style={{ display: 'grid', gap: 20 }}>
             {[
               { title: t('trust1Title'), desc: t('trust1Desc'), teal: true,
                 icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
@@ -337,7 +371,7 @@ export default async function HomePage() {
 
 function FeaturedArticleCard({ article, readMore }: { article: HomeArticle; readMore: string }) {
   return (
-    <Link href={`/articles/${article.id}`} className="rh-news-card-link" style={{ gridColumn: 'span 2' }}>
+    <Link href={`/articles/${article.id}`} className="rh-news-card-link rh-featured-span" style={{ gridColumn: 'span 2' }}>
     <article className="rh-news-card-featured" style={{
       background: 'var(--rh-navy)',
       borderRadius: 'var(--rh-radius-lg)', padding: 32,
