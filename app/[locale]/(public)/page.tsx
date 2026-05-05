@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { getLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getPrisma } from '@/lib/db'
+import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,19 +70,20 @@ export default async function HomePage() {
     },
   })
 
-  const articles: HomeArticle[] = dbArticles.map((a, i) => ({
-    id: a.id,
-    country: COUNTRY_CODE[a.country] ?? 'EU',
-    flag: COUNTRY_FLAG[a.country] ?? '🌍',
-    tag: a.tags[0] ?? '',
-    title: (locale === 'ru' ? a.titleRu : a.titleUk) ?? '',
-    summary: (locale === 'ru' ? a.summaryRu : a.summaryUk) ?? '',
-    date: a.publishedAt?.toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'uk-UA', {
-      day: 'numeric', month: 'short', year: 'numeric',
-    }) ?? '',
-    source: a.sourceId,
-    featured: i === 0,
-  }))
+  const articles: HomeArticle[] = dbArticles.map((a, i) => {
+    const { title, summary } = getLocalizedContent(a, locale)
+    return {
+      id: a.id,
+      country: COUNTRY_CODE[a.country] ?? 'EU',
+      flag: COUNTRY_FLAG[a.country] ?? '🌍',
+      tag: a.tags[0] ?? '',
+      title,
+      summary,
+      date: getLocaleDate(a.publishedAt, locale),
+      source: a.sourceId,
+      featured: i === 0,
+    }
+  })
 
   return (
     <main>

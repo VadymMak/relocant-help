@@ -2,15 +2,15 @@ import { notFound } from 'next/navigation'
 import { getTranslations, getLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getPrisma } from '@/lib/db'
+import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
 
 export const dynamic = 'force-dynamic'
 
 const COUNTRY_FLAG: Record<string, string> = {
-  Slovakia: '🇸🇰',
-  Poland: '🇵🇱',
-  Germany: '🇩🇪',
-  'Czech Republic': '🇨🇿',
-  'European Union': '🇪🇺',
+  Slovakia: '🇸🇰', Poland: '🇵🇱', Germany: '🇩🇪',
+  'Czech Republic': '🇨🇿', 'European Union': '🇪🇺',
+  Spain: '🇪🇸', Italy: '🇮🇹', Romania: '🇷🇴',
+  Bulgaria: '🇧🇬', Portugal: '🇵🇹', Turkey: '🇹🇷',
 }
 
 interface Props {
@@ -101,13 +101,11 @@ export default async function ArticlePage({ params }: Props) {
   }
 
   const isRu = locale === 'ru'
-  const title = (isRu ? article.titleRu : article.titleUk) ?? article.originalTitle
-  const fullText = (isRu ? article.fullTextRu : article.fullTextUk) ?? ''
+  const { title: localizedTitle, fullText, summary } = getLocalizedContent(article, locale)
+  const title = localizedTitle || article.originalTitle || ''
   const flag = COUNTRY_FLAG[article.country] ?? '🌍'
   const tag = article.tags[0] ?? ''
-  const dateStr = article.publishedAt?.toLocaleDateString(isRu ? 'ru-RU' : 'uk-UA', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  }) ?? ''
+  const dateStr = getLocaleDate(article.publishedAt, locale)
 
   return (
     <main>
@@ -157,7 +155,7 @@ export default async function ArticlePage({ params }: Props) {
             }}>
               {fullText ? renderFullText(fullText) : (
                 <p style={{ color: 'var(--rh-fg-2)', fontSize: 15 }}>
-                  {(isRu ? article.summaryRu : article.summaryUk) ?? ''}
+                  {summary}
                 </p>
               )}
 
@@ -191,12 +189,11 @@ export default async function ArticlePage({ params }: Props) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {related.map(rel => {
-                const relTitle = (isRu ? rel?.titleRu : rel?.titleUk) ?? rel?.originalTitle ?? ''
+                const { title: relTitle } = getLocalizedContent(rel ?? {}, locale)
+                const displayRelTitle = relTitle || rel?.originalTitle || ''
                 const relFlag = COUNTRY_FLAG[rel?.country ?? ''] ?? '🌍'
                 const relTag = rel?.tags[0] ?? ''
-                const relDate = rel?.publishedAt?.toLocaleDateString(isRu ? 'ru-RU' : 'uk-UA', {
-                  day: 'numeric', month: 'short', year: 'numeric',
-                }) ?? ''
+                const relDate = getLocaleDate(rel?.publishedAt, locale)
                 return (
                   <Link
                     key={rel?.id}
@@ -225,7 +222,7 @@ export default async function ArticlePage({ params }: Props) {
                         )}
                       </div>
                       <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: 'var(--rh-fg-1)', marginBottom: 8 }}>
-                        {relTitle}
+                        {displayRelTitle}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--rh-fg-3)' }}>
                         {relDate}

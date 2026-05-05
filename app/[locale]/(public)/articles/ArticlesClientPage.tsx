@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import type { SearchArticle } from '@/lib/types/search'
+import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
 
 export interface ArticleCardData {
   id: string
@@ -210,14 +211,11 @@ function ArticlesClientPageInner({ articles }: { articles: ArticleCardData[] }) 
             {searchResults && searchResults.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
                 {searchResults.map(article => {
-                  const title = (locale === 'ru' ? article.titleRu : article.titleUk) ?? ''
-                  const summary = (locale === 'ru' ? article.summaryRu : article.summaryUk) ?? ''
+                  const { title, summary } = getLocalizedContent(article, locale)
                   const flag = COUNTRY_FLAG[article.country] ?? '🌍'
                   const code = COUNTRY_CODE[article.country] ?? 'EU'
                   const tag = article.tags[0] ?? ''
-                  const date = article.publishedAt
-                    ? new Date(article.publishedAt).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })
-                    : ''
+                  const date = getLocaleDate(article.publishedAt, locale)
 
                   return (
                     <Link
