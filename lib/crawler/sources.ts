@@ -202,6 +202,7 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
 
   // ── SPAIN ─────────────────────────────────────────────────
   {
+    // All inclusion.gob.es and extranjeros.inclusion.gob.es URLs return fetch failed (network-level block)
     id: 'es-migraciones',
     country: 'Spain',
     countryFlag: '🇪🇸',
@@ -211,27 +212,29 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     targetLanguages: ['uk', 'ru'],
     tags: ['residence', 'Spain', 'migration', 'foreigners'],
     checkIntervalHours: 48,
-    active: true,
+    active: false,
     type: 'scrape',
   },
 
   // ── ITALY ─────────────────────────────────────────────────
   {
-    id: 'it-integrazione',
+    // interno.gov.it is the Ministry of Interior — HEAD 200, redirects to IT version (fine for scraping)
+    id: 'it-interno',
     country: 'Italy',
     countryFlag: '🇮🇹',
-    name: 'Portale Integrazione Migranti',
-    url: 'https://integrazionemigranti.gov.it/en-gb/',
+    name: 'Ministero dell\'Interno — Immigrazione e Asilo',
+    url: 'https://www.interno.gov.it/en/themes/immigration',
     language: 'it',
     targetLanguages: ['uk', 'ru'],
-    tags: ['residence', 'Italy', 'migration', 'Ukraine-emergency'],
-    checkIntervalHours: 24,
+    tags: ['residence', 'Italy', 'immigration', 'asylum'],
+    checkIntervalHours: 48,
     active: true,
     type: 'scrape',
   },
 
   // ── ROMANIA ───────────────────────────────────────────────
   {
+    // protectieucraina.gov.ro unreachable (DNS/connection error); re-enable when site recovers
     id: 'ro-protectie',
     country: 'Romania',
     countryFlag: '🇷🇴',
@@ -241,20 +244,49 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     targetLanguages: ['uk', 'ru'],
     tags: ['Ukraine', 'Romania', 'temporary-protection', 'refugees'],
     checkIntervalHours: 24,
+    active: false,
+    type: 'scrape',
+  },
+  {
+    // ANOFM (National Employment Agency) — 200 ✓; covers employment rights for Ukrainians
+    id: 'ro-anofm',
+    country: 'Romania',
+    countryFlag: '🇷🇴',
+    name: 'ANOFM — National Employment Agency Romania',
+    url: 'https://www.anofm.ro/',
+    language: 'ro',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Romania', 'employment', 'work-permit', 'foreigners'],
+    checkIntervalHours: 48,
     active: true,
     type: 'scrape',
   },
 
   // ── BULGARIA ──────────────────────────────────────────────
   {
-    id: 'bg-ukraine',
+    // ukraine.gov.bg/bg/ unreachable; MVR (Ministry of Interior) EN — 200 ✓
+    id: 'bg-mvr',
     country: 'Bulgaria',
     countryFlag: '🇧🇬',
-    name: 'Ukraine Bulgaria Official Portal',
-    url: 'https://ukraine.gov.bg/bg/',
+    name: 'MVR — Ministry of Interior Bulgaria',
+    url: 'https://www.mvr.bg/en',
     language: 'bg',
     targetLanguages: ['uk', 'ru'],
-    tags: ['Ukraine', 'Bulgaria', 'temporary-protection'],
+    tags: ['Bulgaria', 'residence', 'registration', 'foreigners'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+  {
+    // AREF (State Agency for Refugees) EN — 200 ✓; primary refugee authority
+    id: 'bg-aref',
+    country: 'Bulgaria',
+    countryFlag: '🇧🇬',
+    name: 'AREF — State Agency for Refugees Bulgaria',
+    url: 'https://aref.government.bg/en',
+    language: 'bg',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Bulgaria', 'Ukraine', 'temporary-protection', 'refugees', 'asylum'],
     checkIntervalHours: 24,
     active: true,
     type: 'scrape',
@@ -262,11 +294,12 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
 
   // ── TURKEY ────────────────────────────────────────────────
   {
+    // www.goc.gov.tr/en redirects to Turkish 404; EN subdomain en.goc.gov.tr/ — 200 ✓
     id: 'tr-goc',
     country: 'Turkey',
     countryFlag: '🇹🇷',
-    name: 'Göç İdaresi Genel Müdürlüğü',
-    url: 'https://www.goc.gov.tr/en',
+    name: 'Göç İdaresi — Directorate General of Migration Management',
+    url: 'https://en.goc.gov.tr/',
     language: 'tr',
     targetLanguages: ['uk', 'ru', 'en'],
     tags: ['Turkey', 'residence-permit', 'migration', 'foreigners'],
@@ -277,6 +310,7 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
 
   // ── PORTUGAL ──────────────────────────────────────────────
   {
+    // All aima.gov.pt and sef.pt URLs return fetch failed (network-level block)
     id: 'pt-aima',
     country: 'Portugal',
     countryFlag: '🇵🇹',
@@ -286,7 +320,7 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     targetLanguages: ['uk', 'ru'],
     tags: ['Portugal', 'residence', 'migration', 'asylum'],
     checkIntervalHours: 48,
-    active: true,
+    active: false,
     type: 'scrape',
   },
 
