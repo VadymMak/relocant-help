@@ -23,22 +23,26 @@ const SEARCH_QUERIES = [
 export async function fetchFromNewsData(): Promise<NewsDataArticle[]> {
   const apiKey = process.env.NEWSDATA_API_KEY
   if (!apiKey) {
-    console.warn('[newsapi] NEWSDATA_API_KEY not set — skipping')
+    console.warn('[NewsData] NEWSDATA_API_KEY not set — skipping')
     return []
   }
+
+  console.log('[NewsData] Starting fetch...')
 
   const allArticles: NewsDataArticle[] = []
   const seenIds = new Set<string>()
 
   for (const query of SEARCH_QUERIES) {
     try {
+      // Note: timeframe is a paid-plan-only param — omit for free plan
       const params = new URLSearchParams({
         apikey: apiKey,
         q: query,
-        language: 'en,uk,ru,pl,sk,de,cs',
-        timeframe: '24',
+        language: 'en',
         size: '10',
       })
+
+      console.log(`[NewsData] Querying: "${query}"`)
 
       const res = await fetch(`${NEWSDATA_BASE}?${params}`, {
         next: { revalidate: 0 },
@@ -46,16 +50,23 @@ export async function fetchFromNewsData(): Promise<NewsDataArticle[]> {
       })
 
       if (!res.ok) {
-        console.error(`[newsapi] HTTP ${res.status} for query: ${query}`)
+        console.error(`[NewsData] HTTP ${res.status} for query: "${query}"`)
         continue
       }
 
-      const data = await res.json() as { status: string; results?: NewsDataArticle[] }
+      const data = await res.json() as {
+        status: string
+        totalResults?: number
+        results?: NewsDataArticle[]
+        message?: string
+      }
 
       if (data.status !== 'success' || !data.results) {
-        console.error(`[newsapi] API error status: ${data.status}`)
+        console.error(`[NewsData] API error: status="${data.status}" message="${data.message ?? ''}"`)
         continue
       }
+
+      console.log(`[NewsData] Query "${query}" → ${data.results.length} results (total: ${data.totalResults ?? '?'})`)
 
       for (const article of data.results) {
         if (article.article_id && !seenIds.has(article.article_id)) {
@@ -66,10 +77,11 @@ export async function fetchFromNewsData(): Promise<NewsDataArticle[]> {
 
       await new Promise(r => setTimeout(r, 1000))
     } catch (err) {
-      console.error(`[newsapi] Query failed: ${query}`, err)
+      console.error(`[NewsData] Query failed: "${query}"`, err)
     }
   }
 
+  console.log(`[NewsData] Total unique articles fetched: ${allArticles.length}`)
   return allArticles
 }
 

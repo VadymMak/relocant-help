@@ -325,8 +325,8 @@ Keywords indicating relevance: ${keywordsStr}`
       isRelevant: score >= 20,
       country: source.country,
       publishedAt: article.publishedAt,
-      // 50+ goes to pending_review for human check, 20-49 auto-rejected but saved
-      status: score >= 50 ? 'pending_review' : 'rejected',
+      // 25+ goes to pending_review for human check, 20-24 auto-rejected but saved
+      status: score >= 25 ? 'pending_review' : 'rejected',
     }
   } catch (e) {
     console.error('Claude processing failed:', e)
@@ -351,8 +351,11 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
 
   // ── Layer 1: NewsData.io API ───────────────────────────────
   if (process.env.NEWSDATA_API_KEY) {
+    let nd_found = 0
+    let nd_relevant = 0
     try {
       const newsArticles = await fetchFromNewsData()
+      nd_found = newsArticles.length
 
       for (const article of newsArticles) {
         const existing = await getPrisma().crawledArticle.findFirst({
@@ -393,6 +396,8 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
 
         if (result && result.isRelevant) {
           relevant++
+          nd_relevant++
+          console.log(`[NewsData] Relevant: "${result.originalTitle}" → ${result.country} (score: ${result.relevanceScore})`)
           await getPrisma().crawledArticle.create({
             data: {
               sourceId: result.sourceId,
@@ -421,6 +426,15 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
       const message = err instanceof Error ? err.message : String(err)
       errors.push(`newsdata: ${message}`)
     }
+
+    await getPrisma().crawlerLog.create({
+      data: {
+        sourceId: 'newsdata-layer1',
+        status: 'success',
+        articlesFound: nd_found,
+        articlesRelevant: nd_relevant,
+      },
+    })
   }
 
   // ── Layer 2 + 3: RSS feeds and scraping ───────────────────
