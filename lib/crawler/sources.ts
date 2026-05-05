@@ -11,9 +11,25 @@ export interface CrawlerSource {
   tags: string[]
   checkIntervalHours: number
   active: boolean
+  type?: 'rss' | 'scrape' | 'newsapi'
 }
 
 export const CRAWLER_SOURCES: CrawlerSource[] = [
+  // ── NEWSDATA.IO API ───────────────────────────────────────
+  {
+    id: 'newsdata-api',
+    country: 'European Union',
+    countryFlag: '🌐',
+    name: 'NewsData.io — EU Migration News',
+    url: 'https://newsdata.io',
+    language: 'en',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['migration', 'EU', 'refugees', 'Ukraine'],
+    checkIntervalHours: 12,
+    active: true,
+    type: 'newsapi',
+  },
+
   // ── SLOVAKIA ──────────────────────────────────────────────
   {
     id: 'sk-minv',
@@ -27,9 +43,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['residence', 'police', 'registration', 'temporary-protection'],
     checkIntervalHours: 24,
     active: true,
+    type: 'rss',
   },
   {
-    // RSS is dead (connection refused) — static page only, check weekly
     id: 'sk-financna',
     country: 'Slovakia',
     countryFlag: '🇸🇰',
@@ -40,9 +56,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['taxes', 'tax-return', 'vat', 'freelancer'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
   },
   {
-    // Static page, no RSS — check weekly
     id: 'sk-sozpoist',
     country: 'Slovakia',
     countryFlag: '🇸🇰',
@@ -53,9 +69,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['social-insurance', 'pension', 'sick-leave', 'maternity'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
   },
   {
-    // Static page — check weekly
     id: 'sk-upsvar',
     country: 'Slovakia',
     countryFlag: '🇸🇰',
@@ -66,9 +82,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['employment', 'job-seeker', 'unemployment-benefit'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
   },
   {
-    // Active RSS — daily updates, covers employment, wages, Ukrainian displaced persons
     id: 'sk-employment',
     country: 'Slovakia',
     countryFlag: '🇸🇰',
@@ -80,11 +96,11 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['employment', 'labour', 'social-policy', 'minimum-wage', 'Ukraine'],
     checkIntervalHours: 24,
     active: true,
+    type: 'rss',
   },
 
   // ── POLAND ────────────────────────────────────────────────
   {
-    // Static page — check weekly
     id: 'pl-udsc',
     country: 'Poland',
     countryFlag: '🇵🇱',
@@ -95,9 +111,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['residence', 'foreigners', 'temporary-protection', 'Poland'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
   },
   {
-    // Static page — check weekly
     id: 'pl-zus',
     country: 'Poland',
     countryFlag: '🇵🇱',
@@ -108,11 +124,11 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['social-insurance', 'Poland', 'contributions'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
   },
 
   // ── GERMANY ───────────────────────────────────────────────
   {
-    // Active RSS — news feed (Meldungen), verified 200 with items
     id: 'de-bamf',
     country: 'Germany',
     countryFlag: '🇩🇪',
@@ -124,9 +140,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['asylum', 'residence', 'Germany', 'Blue-Card', 'integration'],
     checkIntervalHours: 24,
     active: true,
+    type: 'rss',
   },
   {
-    // Active RSS — press releases feed, verified 200 with items
     id: 'de-bamf-press',
     country: 'Germany',
     countryFlag: '🇩🇪',
@@ -138,9 +154,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['Germany', 'asylum', 'migration', 'press'],
     checkIntervalHours: 48,
     active: true,
+    type: 'rss',
   },
   {
-    // Static page — check weekly
     id: 'de-germany4ukraine',
     country: 'Germany',
     countryFlag: '🇩🇪',
@@ -151,11 +167,11 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['Germany', 'Ukrainian', 'work-permit', 'integration', 'help'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
   },
 
   // ── CZECH REPUBLIC ────────────────────────────────────────
   {
-    // Static page — check weekly
     id: 'cz-mvcr',
     country: 'Czech Republic',
     countryFlag: '🇨🇿',
@@ -166,11 +182,26 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['residence', 'Czech', 'visa', 'registration'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
+  },
+  {
+    // IPC = Integration Policy Center, Czech Republic — WordPress RSS verified 10 items
+    id: 'cz-ipc',
+    country: 'Czech Republic',
+    countryFlag: '🇨🇿',
+    name: 'IPC — Integration Policy Center CZ',
+    url: 'https://ipc.gov.cz/en/news/',
+    rssUrl: 'https://ipc.gov.cz/en/feed/',
+    language: 'en',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Czech', 'integration', 'foreigners', 'residence', 'services'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'rss',
   },
 
-  // ── EU / INTERNATIONAL — RSS FEEDS ───────────────────────
+  // ── EU / INTERNATIONAL ────────────────────────────────────
   {
-    // Static page — check weekly
     id: 'eu-commission',
     country: 'European Union',
     countryFlag: '🇪🇺',
@@ -181,9 +212,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['EU', 'temporary-protection', 'directive', 'rights'],
     checkIntervalHours: 168,
     active: true,
+    type: 'scrape',
   },
   {
-    // Active RSS — EU Agency for Asylum, press releases, verified 30 items
     id: 'eu-euaa',
     country: 'European Union',
     countryFlag: '🇪🇺',
@@ -195,23 +226,23 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['EU', 'asylum', 'temporary-protection', 'country-guidance', 'rights'],
     checkIntervalHours: 48,
     active: true,
+    type: 'rss',
   },
   {
-    // Active RSS — ECRE European Council on Refugees and Exiles, verified 10 items
     id: 'eu-ecre',
     country: 'European Union',
     countryFlag: '🇪🇺',
     name: 'ECRE — European Council on Refugees and Exiles',
     url: 'https://ecre.org/category/news/',
-    rssUrl: 'https://ecre.org/feed/',
+    rssUrl: 'https://ecre.org/category/news/feed/',
     language: 'en',
     targetLanguages: ['uk', 'ru'],
     tags: ['EU', 'asylum', 'refugees', 'rights', 'protection'],
     checkIntervalHours: 24,
     active: true,
+    type: 'rss',
   },
   {
-    // Active RSS — UN News, Migrants & Refugees topic, verified items
     id: 'eu-un-migrants',
     country: 'European Union',
     countryFlag: '🇺🇳',
@@ -223,9 +254,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['UN', 'migrants', 'refugees', 'international', 'rights'],
     checkIntervalHours: 24,
     active: true,
+    type: 'rss',
   },
   {
-    // Active RSS — European Parliament LIBE Committee (Civil Liberties, Justice, Home Affairs)
     id: 'eu-europarl-libe',
     country: 'European Union',
     countryFlag: '🇪🇺',
@@ -237,6 +268,7 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     tags: ['EU', 'parliament', 'migration', 'asylum', 'civil-liberties', 'legislation'],
     checkIntervalHours: 48,
     active: true,
+    type: 'rss',
   },
 ]
 
@@ -250,4 +282,6 @@ export const RELEVANCE_KEYWORDS = [
   'bank account', 'bankový účet', 'konto',
   'displaced', 'protection', 'migration', 'migrant', 'integration',
   'Blue Card', 'aufenthaltserlaubnis', 'niederlassungserlaubnis',
+  'housing', 'social benefits', 'language course', 'recognition',
+  'qualification', 'war', 'conflict', 'relocation', 'relocant',
 ]

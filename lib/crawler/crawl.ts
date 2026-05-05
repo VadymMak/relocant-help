@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
 import { getSources } from '@/lib/db/sources-config'
 import { getPrisma } from '@/lib/db'
+import { fetchNewsData } from './newsapi'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -129,6 +130,81 @@ async function enrichWithFullPage(article: RawArticle): Promise<RawArticle> {
   return article
 }
 
+// ── Layer 3: Extract article links from a news list page ───
+export async function extractArticleLinks(
+  source: CrawlerSource,
+  seenUrls: Set<string>
+): Promise<RawArticle[]> {
+  let html: string
+  try {
+    const res = await fetch(source.url, {
+      headers: { 'User-Agent': 'relocant.help/1.0' },
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    html = await res.text()
+  } catch (err) {
+    throw new Error(`Page fetch failed: ${err}`)
+  }
+
+  // Extract base origin for relative links
+  const origin = new URL(source.url).origin
+
+  // Find all hrefs that look like article/news links
+  const hrefPattern = /href=["']([^"']+)["']/g
+  const candidates = new Set<string>()
+  let m: RegExpExecArray | null
+
+  while ((m = hrefPattern.exec(html)) !== null) {
+    const href = m[1]
+    // Skip anchors, javascript, mailto, assets
+    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue
+    if (/\.(css|js|png|jpg|gif|svg|ico|woff|pdf)(\?|$)/i.test(href)) continue
+
+    // Only keep links that contain article-like path segments
+    const articlePattern = /\/(news|article|aktualit|sprav|meldung|press|novinky|aktualn|media|clanek|info|post|blog)\//i
+    if (!articlePattern.test(href)) continue
+
+    const absolute = href.startsWith('http') ? href : `${origin}${href.startsWith('/') ? '' : '/'}${href}`
+    candidates.add(absolute)
+  }
+
+  // Filter to only URLs not seen before
+  const newUrls = [...candidates].filter(u => !seenUrls.has(u)).slice(0, 15)
+
+  const articles: RawArticle[] = []
+  for (const url of newUrls) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'relocant.help/1.0' },
+        next: { revalidate: 0 },
+        signal: AbortSignal.timeout(10000),
+      })
+      if (!res.ok) continue
+      const pageHtml = await res.text()
+      const title = pageHtml.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? url
+      const content = extractText(pageHtml)
+      if (content.length < 100) continue
+
+      articles.push({
+        sourceId: source.id,
+        url,
+        title,
+        content,
+        language: source.language,
+      })
+
+      // Polite delay between article fetches
+      await new Promise(r => setTimeout(r, 1500))
+    } catch {
+      // Skip unreachable article pages
+    }
+  }
+
+  return articles
+}
+
 function extractText(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -177,27 +253,33 @@ Respond with this exact JSON structure:
   }
 }
 
-RELEVANCE SCORING — be generous, the audience is Ukrainian/Russian relocants in Europe:
+RELEVANCE SCORING — our audience is Ukrainian/Russian-speaking migrants and refugees living in Europe. Be generous.
 
-Score 60-100 (RELEVANT — save for review):
+Score 80-100 (HIGHLY RELEVANT — definitely save):
 - Directly mentions Ukraine, Ukrainians, Russian speakers, or displaced persons
-- Covers residence permits, temporary protection, visas, registration
-- Covers work permits, employment rights, taxes, social insurance
-- Covers housing, social benefits, healthcare access for migrants
-- Covers asylum, refugee status, migration policy changes
-- Any change in law or procedure that affects foreigners in EU countries
-- Integration programs, language courses, recognition of qualifications
+- Covers temporary protection, Section 17/Section 15 directives, TP status changes
+- Covers residence permits, visas, registration procedures
 
-Score 30-59 (POSSIBLY RELEVANT — save but auto-reject):
-- General migration/asylum news that may affect relocants indirectly
-- EU policy changes that could affect foreigners
-- Economic news relevant to immigrants (minimum wage, benefits changes)
+Score 50-79 (RELEVANT — save for review):
+- ANY aspect of daily life for migrants/refugees in Europe:
+  work permits, employment rights, taxes, social insurance, health insurance
+  housing assistance, social benefits, integration programs
+  language courses, recognition of foreign qualifications, banking
+  school enrollment, childcare, family reunification
+- ANY change in law or procedure that could affect foreigners living in EU countries
+- Asylum rules, refugee status, migration policy updates
+- EU-wide regulations affecting non-EU residents
 
-Score 0-29 (NOT RELEVANT — skip):
-- Purely local/domestic news with no foreign dimension
-- Sports, culture, entertainment unrelated to integration
-- Political commentary not affecting foreigners' legal status
-- Administrative news irrelevant to daily life of relocants
+Score 20-49 (POSSIBLY RELEVANT — save but auto-reject for manual check):
+- General migration/asylum statistics or reports
+- EU policy debates that may lead to future changes
+- Economic news (minimum wage, inflation) indirectly affecting migrants
+
+Score 0-19 (NOT RELEVANT — skip):
+- Purely domestic political news with no migration dimension
+- Sports, entertainment, culture unrelated to integration
+- Crime, disasters unrelated to migrant issues
+- Administrative/organizational news irrelevant to daily life
 
 Keywords indicating relevance: ${keywordsStr}`
 
@@ -239,11 +321,11 @@ Keywords indicating relevance: ${keywordsStr}`
       fullTextRu: parsed.translations?.ru?.fullText,
       tags: [...(parsed.tags ?? []), ...source.tags],
       relevanceScore: score,
-      isRelevant: score >= 30,
+      isRelevant: score >= 20,
       country: source.country,
       publishedAt: article.publishedAt,
-      // 60+ goes to pending_review for human check, 30-59 auto-rejected but saved
-      status: score >= 60 ? 'pending_review' : 'rejected',
+      // 50+ goes to pending_review for human check, 20-49 auto-rejected but saved
+      status: score >= 50 ? 'pending_review' : 'rejected',
     }
   } catch (e) {
     console.error('Claude processing failed:', e)
@@ -269,10 +351,28 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
   for (const source of sources) {
     try {
       let rawArticles: RawArticle[] = []
-      if (source.rssUrl) {
+
+      // ── Layer 1: NewsData.io API ───────────────────────────
+      if (source.type === 'newsapi') {
+        rawArticles = await fetchNewsData(
+          'Ukraine OR Ukrainian OR refugee OR "temporary protection" OR migration',
+          ['sk', 'pl', 'de', 'cz', 'at', 'hu', 'ro', 'bg', 'hr', 'si'],
+          'en'
+        )
+
+      // ── Layer 2: RSS / Atom feeds ──────────────────────────
+      } else if (source.rssUrl) {
         rawArticles = await fetchRSS(source.rssUrl)
+
+      // ── Layer 3: Scrape + link extraction ─────────────────
       } else {
-        rawArticles = await fetchPage(source.url)
+        // Load previously seen URLs from CrawlerLog meta or existing articles
+        const seenArticles = await getPrisma().crawledArticle.findMany({
+          where: { sourceId: source.id },
+          select: { url: true },
+        })
+        const seenUrls = new Set(seenArticles.map(a => a.url))
+        rawArticles = await extractArticleLinks(source, seenUrls)
       }
 
       rawArticles = rawArticles.map(a => ({ ...a, sourceId: source.id, language: source.language }))
