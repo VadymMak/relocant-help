@@ -77,3 +77,15 @@ model CrawlerLog {
 
   @@map("CrawlerLog")
 }
+
+model SourceConfig {
+  id        String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  sourceId  String    @unique @map("source_id")
+  url       String?
+  rssUrl    String?   @map("rss_url")
+  active    Boolean   @default(true)
+  fixedAt   DateTime? @map("fixed_at") @db.Timestamp(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("source_config")
+}
