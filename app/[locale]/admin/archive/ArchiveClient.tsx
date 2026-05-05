@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { getCountryMeta } from '@/lib/utils/countries'
+import { getLocaleDate } from '@/lib/utils/locale-content'
 
 export interface ArchiveArticle {
   id: string
@@ -18,31 +20,25 @@ export interface ArchiveArticle {
 
 const PAGE_SIZE = 20
 
-const COUNTRY_TABS = [
-  { label: 'Всі', code: 'ALL' },
-  { label: '🇸🇰 SK', code: 'SK' },
-  { label: '🇵🇱 PL', code: 'PL' },
-  { label: '🇩🇪 DE', code: 'DE' },
-  { label: '🇨🇿 CZ', code: 'CZ' },
-  { label: '🇪🇺 EU', code: 'EU' },
-  { label: '🇪🇸 ES', code: 'ES' },
-  { label: '🇮🇹 IT', code: 'IT' },
-  { label: '🇷🇴 RO', code: 'RO' },
-  { label: '🇧🇬 BG', code: 'BG' },
-  { label: '🇵🇹 PT', code: 'PT' },
-  { label: '🇹🇷 TR', code: 'TR' },
-]
-
 interface Props {
   articles: ArchiveArticle[]
   locale: string
+  countries: string[]
 }
 
-export default function ArchiveClient({ articles, locale }: Props) {
+export default function ArchiveClient({ articles, locale, countries }: Props) {
   const t = useTranslations('admin')
   const [search, setSearch] = useState('')
   const [countryFilter, setCountryFilter] = useState('ALL')
   const [page, setPage] = useState(1)
+
+  const countryTabs = [
+    { label: 'Всі', code: 'ALL' },
+    ...countries.map(c => {
+      const { flag, label } = getCountryMeta(c)
+      return { label: `${flag} ${label}`, code: label }
+    }),
+  ]
 
   const q = search.trim().toLowerCase()
 
@@ -99,7 +95,7 @@ export default function ArchiveClient({ articles, locale }: Props) {
 
       {/* Country tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-        {COUNTRY_TABS.map(({ code, label }) => (
+        {countryTabs.map(({ code, label }) => (
           <button
             key={code}
             onClick={() => changeFilter(code)}
@@ -145,9 +141,7 @@ export default function ArchiveClient({ articles, locale }: Props) {
             <tbody>
               {paged.map(article => {
                 const title = (locale === 'ru' ? article.titleRu : article.titleUk) ?? '—'
-                const date = article.publishedAt
-                  ? new Date(article.publishedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })
-                  : '—'
+                const date = getLocaleDate(article.publishedAt, locale) || '—'
                 const score = Math.round(article.relevanceScore)
                 const scoreColor = score >= 80 ? 'var(--rh-teal)' : score >= 50 ? 'var(--rh-warning)' : 'var(--rh-fg-3)'
 

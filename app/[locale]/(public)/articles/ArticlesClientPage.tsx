@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import type { SearchArticle } from '@/lib/types/search'
 import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
+import { getCountryMeta } from '@/lib/utils/countries'
 
 export interface ArticleCardData {
   id: string
@@ -20,35 +21,7 @@ export interface ArticleCardData {
 
 const PAGE_SIZE = 6
 
-const COUNTRY_FILTERS = [
-  { label: 'Всі', code: 'ALL' },
-  { label: '🇸🇰 SK', code: 'SK' },
-  { label: '🇵🇱 PL', code: 'PL' },
-  { label: '🇩🇪 DE', code: 'DE' },
-  { label: '🇨🇿 CZ', code: 'CZ' },
-  { label: '🇪🇺 EU', code: 'EU' },
-  { label: '🇪🇸 ES', code: 'ES' },
-  { label: '🇮🇹 IT', code: 'IT' },
-  { label: '🇷🇴 RO', code: 'RO' },
-  { label: '🇧🇬 BG', code: 'BG' },
-  { label: '🇵🇹 PT', code: 'PT' },
-  { label: '🇹🇷 TR', code: 'TR' },
-]
-
-const COUNTRY_FLAG: Record<string, string> = {
-  Slovakia: '🇸🇰', Poland: '🇵🇱', Germany: '🇩🇪',
-  'Czech Republic': '🇨🇿', 'European Union': '🇪🇺',
-  Spain: '🇪🇸', Italy: '🇮🇹', Romania: '🇷🇴',
-  Bulgaria: '🇧🇬', Portugal: '🇵🇹', Turkey: '🇹🇷',
-}
-const COUNTRY_CODE: Record<string, string> = {
-  Slovakia: 'SK', Poland: 'PL', Germany: 'DE',
-  'Czech Republic': 'CZ', 'European Union': 'EU',
-  Spain: 'ES', Italy: 'IT', Romania: 'RO',
-  Bulgaria: 'BG', Portugal: 'PT', Turkey: 'TR',
-}
-
-function ArticlesClientPageInner({ articles }: { articles: ArticleCardData[] }) {
+function ArticlesClientPageInner({ articles, countries }: { articles: ArticleCardData[]; countries: string[] }) {
   const t = useTranslations('articles')
   const locale = useLocale()
   const searchParams = useSearchParams()
@@ -95,6 +68,14 @@ function ArticlesClientPageInner({ articles }: { articles: ArticleCardData[] }) 
     setActiveFilter(code)
     setPage(1)
   }
+
+  const countryTabs = [
+    { label: t('filterAll'), code: 'ALL' },
+    ...countries.map(c => {
+      const { flag, label } = getCountryMeta(c)
+      return { label: `${flag} ${label}`, code: label }
+    }),
+  ]
 
   const filtered = activeFilter === 'ALL'
     ? articles
@@ -212,8 +193,7 @@ function ArticlesClientPageInner({ articles }: { articles: ArticleCardData[] }) 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
                 {searchResults.map(article => {
                   const { title, summary } = getLocalizedContent(article, locale)
-                  const flag = COUNTRY_FLAG[article.country] ?? '🌍'
-                  const code = COUNTRY_CODE[article.country] ?? 'EU'
+                  const { flag, label: code } = getCountryMeta(article.country)
                   const tag = article.tags[0] ?? ''
                   const date = getLocaleDate(article.publishedAt, locale)
 
@@ -286,7 +266,7 @@ function ArticlesClientPageInner({ articles }: { articles: ArticleCardData[] }) 
           /* Normal browse mode */
           <>
             <div style={{ display: 'flex', gap: 8, marginBottom: 36, flexWrap: 'wrap' }}>
-              {COUNTRY_FILTERS.map(({ code, label }) => (
+              {countryTabs.map(({ code, label }) => (
                 <button
                   key={code}
                   onClick={() => handleFilter(code)}
@@ -432,10 +412,10 @@ function ArticlesClientPageInner({ articles }: { articles: ArticleCardData[] }) 
 
 import { Suspense } from 'react'
 
-export default function ArticlesClientPage({ articles }: { articles: ArticleCardData[] }) {
+export default function ArticlesClientPage({ articles, countries }: { articles: ArticleCardData[]; countries: string[] }) {
   return (
     <Suspense>
-      <ArticlesClientPageInner articles={articles} />
+      <ArticlesClientPageInner articles={articles} countries={countries} />
     </Suspense>
   )
 }

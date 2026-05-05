@@ -2,22 +2,9 @@ import { getLocale } from 'next-intl/server'
 import { getPrisma } from '@/lib/db'
 import ArticlesClientPage, { type ArticleCardData } from './ArticlesClientPage'
 import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
+import { getCountryMeta } from '@/lib/utils/countries'
 
 export const dynamic = 'force-dynamic'
-
-const COUNTRY_CODE: Record<string, string> = {
-  Slovakia: 'SK', Poland: 'PL', Germany: 'DE',
-  'Czech Republic': 'CZ', 'European Union': 'EU',
-  Spain: 'ES', Italy: 'IT', Romania: 'RO',
-  Bulgaria: 'BG', Portugal: 'PT', Turkey: 'TR',
-}
-
-const COUNTRY_FLAG: Record<string, string> = {
-  Slovakia: '🇸🇰', Poland: '🇵🇱', Germany: '🇩🇪',
-  'Czech Republic': '🇨🇿', 'European Union': '🇪🇺',
-  Spain: '🇪🇸', Italy: '🇮🇹', Romania: '🇷🇴',
-  Bulgaria: '🇧🇬', Portugal: '🇵🇹', Turkey: '🇹🇷',
-}
 
 export default async function ArticlesPage() {
   const locale = await getLocale()
@@ -38,12 +25,15 @@ export default async function ArticlesPage() {
     },
   })
 
+  const countries = [...new Set(dbArticles.map(a => a.country))].sort()
+
   const articles: ArticleCardData[] = dbArticles.map(a => {
     const { title, summary } = getLocalizedContent(a, locale)
+    const { flag, label: countryCode } = getCountryMeta(a.country)
     return {
       id: a.id,
-      countryCode: COUNTRY_CODE[a.country] ?? 'EU',
-      flag: COUNTRY_FLAG[a.country] ?? '🌍',
+      countryCode,
+      flag,
       tag: a.tags[0] ?? '',
       title,
       summary,
@@ -52,5 +42,5 @@ export default async function ArticlesPage() {
     }
   })
 
-  return <ArticlesClientPage articles={articles} />
+  return <ArticlesClientPage articles={articles} countries={countries} />
 }

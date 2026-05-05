@@ -3,22 +3,9 @@ import { getLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getPrisma } from '@/lib/db'
 import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
+import { getCountryMeta } from '@/lib/utils/countries'
 
 export const dynamic = 'force-dynamic'
-
-const COUNTRY_CODE: Record<string, string> = {
-  Slovakia: 'SK', Poland: 'PL', Germany: 'DE',
-  'Czech Republic': 'CZ', 'European Union': 'EU',
-  Spain: 'ES', Italy: 'IT', Romania: 'RO',
-  Bulgaria: 'BG', Portugal: 'PT', Turkey: 'TR',
-}
-
-const COUNTRY_FLAG: Record<string, string> = {
-  Slovakia: '🇸🇰', Poland: '🇵🇱', Germany: '🇩🇪',
-  'Czech Republic': '🇨🇿', 'European Union': '🇪🇺',
-  Spain: '🇪🇸', Italy: '🇮🇹', Romania: '🇷🇴',
-  Bulgaria: '🇧🇬', Portugal: '🇵🇹', Turkey: '🇹🇷',
-}
 
 type HomeArticle = {
   id: string
@@ -32,50 +19,52 @@ type HomeArticle = {
   featured: boolean
 }
 
-const countryFilters = [
-  { label: 'Всі', code: 'ALL' },
-  { label: '🇸🇰 SK', code: 'SK' },
-  { label: '🇵🇱 PL', code: 'PL' },
-  { label: '🇩🇪 DE', code: 'DE' },
-  { label: '🇨🇿 CZ', code: 'CZ' },
-  { label: '🇪🇺 EU', code: 'EU' },
-  { label: '🇪🇸 ES', code: 'ES' },
-  { label: '🇮🇹 IT', code: 'IT' },
-  { label: '🇷🇴 RO', code: 'RO' },
-  { label: '🇧🇬 BG', code: 'BG' },
-  { label: '🇵🇹 PT', code: 'PT' },
-  { label: '🇹🇷 TR', code: 'TR' },
-]
-
 export default async function HomePage() {
   const [t, locale] = await Promise.all([
     getTranslations('home'),
     getLocale(),
   ])
 
-  const dbArticles = await getPrisma().crawledArticle.findMany({
-    where: { status: 'approved' },
-    orderBy: { publishedAt: 'desc' },
-    take: 6,
-    select: {
-      id: true,
-      country: true,
-      tags: true,
-      titleUk: true,
-      titleRu: true,
-      summaryUk: true,
-      summaryRu: true,
-      publishedAt: true,
-      sourceId: true,
-    },
-  })
+  const [dbArticles, distinctCountriesRaw] = await Promise.all([
+    getPrisma().crawledArticle.findMany({
+      where: { status: 'approved' },
+      orderBy: { publishedAt: 'desc' },
+      take: 6,
+      select: {
+        id: true,
+        country: true,
+        tags: true,
+        titleUk: true,
+        titleRu: true,
+        summaryUk: true,
+        summaryRu: true,
+        publishedAt: true,
+        sourceId: true,
+      },
+    }),
+    getPrisma().crawledArticle.findMany({
+      where: { status: 'approved' },
+      select: { country: true },
+      distinct: ['country'],
+      orderBy: { country: 'asc' },
+    }),
+  ])
+
+  const countryFilters = [
+    { label: t('filterAll'), code: 'ALL' },
+    ...distinctCountriesRaw.map(({ country }) => {
+      const { flag, label } = getCountryMeta(country)
+      return { label: `${flag} ${label}`, code: label }
+    }),
+  ]
 
   const articles: HomeArticle[] = dbArticles.map((a, i) => {
     const { title, summary } = getLocalizedContent(a, locale)
+    const { flag, label: country } = getCountryMeta(a.country)
     return {
       id: a.id,
-      country: COUNTRY_CODE[a.country] ?? 'EU',
-      flag: COUNTRY_FLAG[a.country] ?? '🌍',
+      country,
+      flag,
       tag: a.tags[0] ?? '',
       title,
       summary,
