@@ -83,6 +83,8 @@ export default function ArticlesClientPage({ articles }: { articles: ArticleCard
           ))}
         </div>
 
+        <style>{`.rh-article-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.13); border-color: var(--rh-blue) !important; }`}</style>
+
         {paged.length === 0 ? (
           <div style={{
             background: 'white', border: '1px solid var(--rh-border)',
@@ -101,14 +103,15 @@ export default function ArticlesClientPage({ articles }: { articles: ArticleCard
                   href={`/articles/${article.id}`}
                   style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}
                 >
-                  <div style={{
+                  <div className="rh-article-card" style={{
                     background: 'white',
                     border: '1px solid var(--rh-border)',
                     borderRadius: 'var(--rh-radius-lg)',
                     padding: '24px',
                     boxShadow: 'var(--rh-shadow-xs)',
                     display: 'flex', flexDirection: 'column', gap: 12, flex: 1,
-                    transition: 'box-shadow 0.15s',
+                    transition: 'box-shadow 0.15s, border-color 0.15s',
+                    cursor: 'pointer',
                   }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{

@@ -194,6 +194,12 @@ export default async function HomePage() {
           ))}
         </div>
 
+        <style>{`
+          .rh-news-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.13); border-color: var(--rh-blue) !important; }
+          .rh-news-card-featured:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
+          .rh-news-card-link { text-decoration: none; color: inherit; display: block; }
+        `}</style>
+
         {articles.length === 0 ? (
           <div style={{
             background: 'white', border: '1px solid var(--rh-border)',
@@ -330,11 +336,13 @@ export default async function HomePage() {
 
 function FeaturedArticleCard({ article, readMore }: { article: HomeArticle; readMore: string }) {
   return (
-    <article style={{
-      gridColumn: 'span 2', background: 'var(--rh-navy)',
+    <Link href={`/articles/${article.id}`} className="rh-news-card-link" style={{ gridColumn: 'span 2' }}>
+    <article className="rh-news-card-featured" style={{
+      background: 'var(--rh-navy)',
       borderRadius: 'var(--rh-radius-lg)', padding: 32,
       display: 'flex', flexDirection: 'column', gap: 16,
       position: 'relative', overflow: 'hidden', color: 'white', cursor: 'pointer',
+      transition: 'box-shadow 0.15s', height: '100%',
     }}>
       <div style={{
         position: 'absolute', top: '-20%', right: '-5%',
@@ -372,16 +380,19 @@ function FeaturedArticleCard({ article, readMore }: { article: HomeArticle; read
         <span style={{ fontSize: 13, fontWeight: 600, color: '#6FCFA9' }}>{readMore}</span>
       </div>
     </article>
+    </Link>
   )
 }
 
 function ArticleCard({ article, readMore }: { article: HomeArticle; readMore: string }) {
   return (
-    <article style={{
+    <Link href={`/articles/${article.id}`} className="rh-news-card-link">
+    <article className="rh-news-card" style={{
       background: 'white', border: '1px solid var(--rh-border)',
       borderRadius: 'var(--rh-radius-lg)', padding: 24,
       display: 'flex', flexDirection: 'column', gap: 12, cursor: 'pointer',
-      boxShadow: 'var(--rh-shadow-xs)',
+      boxShadow: 'var(--rh-shadow-xs)', transition: 'box-shadow 0.15s, border-color 0.15s',
+      height: '100%',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 16 }}>{article.flag}</span>
@@ -415,5 +426,6 @@ function ArticleCard({ article, readMore }: { article: HomeArticle; readMore: st
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--rh-blue)' }}>{readMore}</span>
       </div>
     </article>
+    </Link>
   )
 }
