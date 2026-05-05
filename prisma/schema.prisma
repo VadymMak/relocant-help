@@ -44,26 +44,53 @@ model Request {
 }
 
 model CrawledArticle {
-  id               String    @id @default(dbgenerated("(gen_random_uuid())::text"))
-  sourceId         String    @map("source_id")
-  url              String    @unique
-  originalTitle    String    @map("original_title")
-  originalContent  String?   @map("original_content")
-  originalLanguage String    @map("original_language")
-  titleUk          String?   @map("title_uk")
-  titleRu          String?   @map("title_ru")
-  summaryUk        String?   @map("summary_uk")
-  summaryRu        String?   @map("summary_ru")
-  fullTextUk       String?   @map("full_text_uk")
-  fullTextRu       String?   @map("full_text_ru")
-  tags             String[]
-  relevanceScore   Int?      @default(0) @map("relevance_score")
-  country          String
-  status           String?   @default("pending_review")
-  publishedAt      DateTime? @map("published_at") @db.Timestamp(6)
-  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  id                 String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  sourceId           String    @map("source_id")
+  url                String    @unique
+  originalTitle      String    @map("original_title")
+  originalContent    String?   @map("original_content")
+  originalLanguage   String    @map("original_language")
+  titleUk            String?   @map("title_uk")
+  titleRu            String?   @map("title_ru")
+  summaryUk          String?   @map("summary_uk")
+  summaryRu          String?   @map("summary_ru")
+  fullTextUk         String?   @map("full_text_uk")
+  fullTextRu         String?   @map("full_text_ru")
+  tags               String[]
+  relevanceScore     Int?      @default(0) @map("relevance_score")
+  country            String
+  status             String?   @default("pending_review")
+  verificationStatus String    @default("pending") @map("verification_status")
+  vectorCheckResult  Json?     @map("vector_check_result")
+  extractedFacts     Json?     @map("extracted_facts")
+  publishedAt        DateTime? @map("published_at") @db.Timestamp(6)
+  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
 
   @@map("CrawledArticle")
+}
+
+model KnowledgeNode {
+  id           String                       @id @default(cuid())
+  articleId    String?                      @map("article_id")
+  content      String
+  embedding    Unsupported("vector(1536)")?
+  level        Int                          @default(1)
+  country      String?
+  topic        String?
+  subject      String?
+  property     String?
+  value        String?
+  validFrom    DateTime?                    @map("valid_from")
+  validTo      DateTime?                    @map("valid_to")
+  sourceType   String                       @default("media") @map("source_type")
+  confidence   Float                        @default(0.5)
+  isSuperseded Boolean                      @default(false) @map("is_superseded")
+  createdAt    DateTime                     @default(now()) @map("created_at")
+
+  @@index([level])
+  @@index([country])
+  @@index([subject, property])
+  @@map("KnowledgeNode")
 }
 
 model CrawlerLog {

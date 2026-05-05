@@ -3,6 +3,7 @@ import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
 import { getSources } from '@/lib/db/sources-config'
 import { getPrisma } from '@/lib/db'
 import { fetchNewsData } from './newsapi'
+import { verifyArticle } from '@/lib/vector/verify'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -397,6 +398,30 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
 
         if (article && article.isRelevant) {
           relevant++
+
+          // Run vector verification before saving (non-blocking — crawl continues on error)
+          let verificationStatus = 'pending'
+          let vectorCheckResult: object | undefined
+          let extractedFactsData: object[] | undefined
+
+          try {
+            const verification = await verifyArticle({
+              titleUk: article.titleUk,
+              summaryUk: article.summaryUk,
+              fullTextUk: article.fullTextUk,
+              originalContent: article.originalContent,
+              country: article.country,
+            })
+            verificationStatus =
+              verification.recommendation === 'publish' ? 'verified'
+              : verification.recommendation === 'reject' ? 'rejected_duplicate'
+              : 'review_needed'
+            vectorCheckResult = verification as object
+            extractedFactsData = verification.extractedFacts as object[]
+          } catch (e) {
+            console.error('[verify] verifyArticle failed:', e)
+          }
+
           await getPrisma().crawledArticle.create({
             data: {
               sourceId: article.sourceId,
@@ -414,6 +439,9 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
               relevanceScore: article.relevanceScore,
               country: article.country,
               status: article.status,
+              verificationStatus,
+              vectorCheckResult,
+              extractedFacts: extractedFactsData,
               publishedAt: article.publishedAt ? new Date(article.publishedAt) : new Date(),
             },
           })
