@@ -638,7 +638,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
 
     await getPrisma().crawlerLog.create({
       data: {
-        sourceId: 'newsdata-layer1',
+        sourceId: 'newsdata-layer2',
         status: 'success',
         articlesFound: nd_found,
         articlesRelevant: nd_relevant,
@@ -646,19 +646,19 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
     })
   }
 
-  // ── Layer 2 + 3: RSS feeds and scraping ───────────────────
-  // Skip newsapi-type sources — handled by Layer 1 above
+  // ── Layer 3 + 4: RSS feeds and scraping ───────────────────
+  // Skip newsapi-type sources — handled by Layer 2 above
   const scrapeableSources = sources.filter(s => s.type !== 'newsapi')
 
   for (const source of scrapeableSources) {
     try {
       let rawArticles: RawArticle[] = []
 
-      // ── Layer 2: RSS / Atom feeds ──────────────────────────
+      // ── Layer 3: RSS / Atom feeds ──────────────────────────
       if (source.rssUrl) {
         rawArticles = await fetchRSS(source.rssUrl)
 
-      // ── Layer 3: Scrape + link extraction ─────────────────
+      // ── Layer 4: Scrape + link extraction ─────────────────
       } else {
         // Load previously seen URLs from CrawlerLog meta or existing articles
         const seenArticles = await getPrisma().crawledArticle.findMany({
