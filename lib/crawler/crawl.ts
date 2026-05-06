@@ -368,7 +368,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
       const googleArticles = await fetchFromGoogleNews()
       gn_found = googleArticles.length
 
-      for (const raw of googleArticles.slice(0, 20)) {
+      for (const raw of googleArticles.slice(0, 40)) {
         const existing = await getPrisma().crawledArticle.findFirst({
           where: {
             OR: [

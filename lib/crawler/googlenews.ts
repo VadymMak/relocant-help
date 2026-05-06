@@ -9,14 +9,27 @@ interface RawArticle {
 }
 
 const GOOGLE_NEWS_QUERIES = [
-  'Ukrainian refugees Slovakia 2026',
-  'Ukrainian refugees Poland residence permit',
-  'Ukrainian migrants Germany temporary protection',
-  'Ukrainians Spain Italy residence 2026',
-  'тимчасовий захист Україна Європа',
-  'dočasné útočisko Slovensko 2026',
-  'Ukrainian refugees Romania Bulgaria 2026',
-  'temporary protection Ukraine extension 2026',
+  // Spain
+  'ukraianos España residencia 2026',
+  'Ukrainian refugees Spain residence permit 2026',
+  // Italy
+  'ucraini Italia permesso soggiorno 2026',
+  'Ukrainian refugees Italy 2026',
+  // Romania
+  'ucraineni Romania 2026 protectie',
+  'Ukrainian refugees Romania 2026',
+  // Germany
+  'Ukrainer Deutschland Aufenthaltserlaubnis 2026',
+  'Ukrainian refugees Germany work permit 2026',
+  // Poland
+  'Ukraińcy Polska zezwolenie pobyt 2026',
+  'Ukrainian Poland PESEL residence 2026',
+  // Bulgaria
+  'украинци България 2026',
+  'Ukrainian refugees Bulgaria 2026',
+  // General EU
+  'temporary protection Ukraine EU extension 2026',
+  'Ukrainian migrants Europe rights 2026',
 ]
 
 export async function fetchFromGoogleNews(): Promise<RawArticle[]> {
