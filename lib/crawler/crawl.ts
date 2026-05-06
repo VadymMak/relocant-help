@@ -4,6 +4,7 @@ import { getSources } from '@/lib/db/sources-config'
 import { getPrisma } from '@/lib/db'
 import { fetchAllNewsArticles, mapNewsDataCountry } from './newsapi'
 import { fetchFromGoogleNews } from './googlenews'
+import { scrapeNewsPages } from './scraper'
 import { verifyArticle } from '@/lib/vector/verify'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -392,6 +393,88 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
   let processed = 0
   let relevant = 0
   const errors: string[] = []
+
+  // ── Layer 0: Direct website scraping ─────────────────────────
+  {
+    let sc_found = 0
+    let sc_relevant = 0
+    try {
+      const scrapedArticles = await scrapeNewsPages()
+      sc_found = scrapedArticles.length
+
+      for (const raw of scrapedArticles) {
+        const existing = await getPrisma().crawledArticle.findFirst({
+          where: {
+            OR: [
+              { url: raw.url },
+              { originalTitle: raw.title },
+            ],
+          },
+          select: { id: true },
+        })
+        if (existing) continue
+
+        const enriched = await enrichWithFullPage(raw)
+        if (!enriched.content || enriched.content.length < 100) continue
+
+        const scrapeSource: CrawlerSource = {
+          id: raw.sourceId,
+          country: 'European Union',
+          countryFlag: '🌍',
+          name: raw.sourceId.replace(/-/g, ' '),
+          url: raw.url,
+          language: 'en',
+          targetLanguages: ['uk', 'ru'],
+          tags: ['migration', 'Ukraine', 'Europe'],
+          checkIntervalHours: 12,
+          active: true,
+        }
+
+        const result = await processWithClaude(enriched, scrapeSource)
+        processed++
+
+        if (result && result.isRelevant) {
+          relevant++
+          sc_relevant++
+          console.log(`[Scraper] Relevant: "${result.originalTitle}" → ${result.country} (score: ${result.relevanceScore})`)
+          await getPrisma().crawledArticle.create({
+            data: {
+              sourceId: result.sourceId,
+              url: result.url,
+              originalTitle: result.originalTitle,
+              originalContent: result.originalContent?.slice(0, 10000),
+              originalLanguage: 'en',
+              titleUk: result.titleUk,
+              titleRu: result.titleRu,
+              summaryUk: result.summaryUk,
+              summaryRu: result.summaryRu,
+              fullTextUk: result.fullTextUk,
+              fullTextRu: result.fullTextRu,
+              tags: result.tags,
+              relevanceScore: result.relevanceScore,
+              country: result.country,
+              status: result.status,
+              publishedAt: new Date(),
+            },
+          })
+        }
+
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      errors.push(`scraper: ${message}`)
+    }
+
+    await getPrisma().crawlerLog.create({
+      data: {
+        sourceId: 'scraper-layer0',
+        status: 'success',
+        articlesFound: sc_found,
+        articlesRelevant: sc_relevant,
+      },
+    })
+  }
 
   // ── Layer 1: Google News RSS (free, no API key) ──────────────
   {
