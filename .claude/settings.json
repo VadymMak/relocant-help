@@ -47,7 +47,9 @@
       "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add lib/crawler/googlenews.ts lib/crawler/crawl.ts)",
       "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add lib/crawler/crawl.ts)",
       "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add lib/crawler/scraper.ts lib/crawler/crawl.ts)",
-      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add lib/crawler/crawl.ts lib/crawler/scraper.ts package.json package-lock.json)"
+      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add lib/crawler/crawl.ts lib/crawler/scraper.ts package.json package-lock.json)",
+      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add 'app/[locale]/\\(public\\)/page.tsx' 'app/[locale]/\\(public\\)/articles/ArticlesClientPage.tsx')",
+      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add prisma/schema.prisma lib/db/sources-config.ts app/api/admin/add-source/route.ts 'app/[locale]/admin/sources/page.tsx' 'app/[locale]/admin/sources/SourcesClient.tsx')"
     ],
     "additionalDirectories": [
       "/Users/vadymmak/Documents/projects/relocant-help/app/[locale]/admin"
