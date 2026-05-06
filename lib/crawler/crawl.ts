@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
 import { getSources } from '@/lib/db/sources-config'
 import { getPrisma } from '@/lib/db'
-import { fetchFromNewsData, mapNewsDataCountry } from './newsapi'
+import { fetchAllNewsArticles, mapNewsDataCountry } from './newsapi'
 import { verifyArticle } from '@/lib/vector/verify'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -359,12 +359,12 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
   let relevant = 0
   const errors: string[] = []
 
-  // ── Layer 1: NewsData.io API ───────────────────────────────
-  if (process.env.NEWSDATA_API_KEY) {
+  // ── Layer 1: NewsData.io + GNews APIs ────────────────────────
+  if (process.env.NEWSDATA_API_KEY || process.env.GNEWS_API_KEY) {
     let nd_found = 0
     let nd_relevant = 0
     try {
-      const newsArticles = await fetchFromNewsData()
+      const newsArticles = await fetchAllNewsArticles()
       nd_found = newsArticles.length
 
       for (const article of newsArticles) {
