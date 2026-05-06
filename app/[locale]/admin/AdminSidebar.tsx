@@ -58,6 +58,12 @@ export default function AdminSidebar({ locale, pendingCount }: Props) {
         icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>}
         label="Sources"
       />
+      <SidebarLink
+        href={`/${locale}/admin/import`}
+        active={isActive(`/${locale}/admin/import`)}
+        icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
+        label={t('sidebarImport')}
+      />
 
       <SidebarSection label={t('sidebarContent')} />
       <SidebarLink

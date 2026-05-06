@@ -197,6 +197,17 @@
     "comingSoonBtn": "Enable module",
     "archiveTitle": "Article archive",
     "archiveSearch": "Search by title…",
-    "archiveEmpty": "No articles"
+    "archiveEmpty": "No articles",
+    "sidebarImport": "Import Article",
+    "importTitle": "Import Article by URL",
+    "importDesc": "Paste a link to any article — Claude will filter and translate it for relocants.",
+    "importUrlLabel": "Article URL",
+    "importUrlPlaceholder": "https://",
+    "importBtn": "Import",
+    "importLoading": "Processing...",
+    "importSuccess": "Article added to moderation queue",
+    "importNotRelevant": "Article is not relevant for relocants",
+    "importScoreLabel": "Relevance score",
+    "importError": "Import error"
   }
 }

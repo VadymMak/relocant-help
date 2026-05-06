@@ -197,6 +197,17 @@
     "comingSoonBtn": "Увімкнути модуль",
     "archiveTitle": "Архів статей",
     "archiveSearch": "Пошук за заголовком…",
-    "archiveEmpty": "Немає статей"
+    "archiveEmpty": "Немає статей",
+    "sidebarImport": "Імпорт статті",
+    "importTitle": "Імпорт статті за URL",
+    "importDesc": "Вставте посилання на будь-яку статтю — Claude відфільтрує та перекладе її для переселенців.",
+    "importUrlLabel": "URL статті",
+    "importUrlPlaceholder": "https://",
+    "importBtn": "Імпортувати",
+    "importLoading": "Обробка...",
+    "importSuccess": "Статтю додано до черги модерації",
+    "importNotRelevant": "Стаття не є релевантною для переселенців",
+    "importScoreLabel": "Оцінка релевантності",
+    "importError": "Помилка імпорту"
   }
 }

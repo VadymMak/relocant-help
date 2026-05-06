@@ -197,6 +197,17 @@
     "comingSoonBtn": "Включить модуль",
     "archiveTitle": "Архив статей",
     "archiveSearch": "Поиск по заголовку…",
-    "archiveEmpty": "Нет статей"
+    "archiveEmpty": "Нет статей",
+    "sidebarImport": "Импорт статьи",
+    "importTitle": "Импорт статьи по URL",
+    "importDesc": "Вставьте ссылку на любую статью — Claude отфильтрует и переведёт её для переселенцев.",
+    "importUrlLabel": "URL статьи",
+    "importUrlPlaceholder": "https://",
+    "importBtn": "Импортировать",
+    "importLoading": "Обработка...",
+    "importSuccess": "Статья добавлена в очередь модерации",
+    "importNotRelevant": "Статья не является релевантной для переселенцев",
+    "importScoreLabel": "Оценка релевантности",
+    "importError": "Ошибка импорта"
   }
 }
