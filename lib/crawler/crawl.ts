@@ -255,102 +255,99 @@ export async function processWithClaude(
   const urlCountry = detectCountryFromUrl(article.url)
   const countryHint = urlCountry ?? source.country
 
-  const prompt = `You are an assistant helping Ukrainian and Russian-speaking relocants in Europe.
-
-Analyze this article from a government or international organization website and respond with ONLY valid JSON (no markdown, no explanation).
+  // ── Call 1: Haiku — filter only (cheap, runs for every article) ──
+  const filterPrompt = `You are a filter for a news aggregator for Ukrainian/Russian-speaking relocants in Europe.
+Respond with ONLY valid JSON (no markdown, no explanation).
 
 SOURCE: ${source.name} (${countryHint})
-ARTICLE TITLE: ${article.title}
-ARTICLE CONTENT: ${article.content.slice(0, 8000)}
+TITLE: ${article.title}
+CONTENT (first 2000 chars): ${article.content.slice(0, 2000)}
 
-Respond with this exact JSON structure:
-{
-  "isRelevant": boolean,
-  "relevanceScore": number 0-100,
-  "relevanceReason": "one sentence why relevant or not",
-  "detectedCountry": "the European country this article is primarily about — one of: Slovakia, Poland, Germany, Czech Republic, Spain, Italy, Romania, Bulgaria, Portugal, Austria, Netherlands, France, United Kingdom, Turkey, Ukraine, European Union",
-  "tags": ["tag1", "tag2"],
-  "translations": {
-    "uk": {
-      "title": "title in Ukrainian",
-      "summary": "2-3 sentence summary in Ukrainian explaining what changed and what relocants need to do",
-      "fullText": "IMPORTANT: Translate the COMPLETE article to Ukrainian. Do NOT summarize or cut content. Preserve ALL specific details: all country names and specific requirements, all numbers, dates, deadlines, all step-by-step instructions, all links to official resources mentioned. Minimum length: 80% of original content length. Write as a complete helpful article, not a summary. Format with paragraphs. Use headers where original has them. This is a knowledge resource — readers need full details."
-    },
-    "ru": {
-      "title": "title in Russian",
-      "summary": "2-3 sentence summary in Russian",
-      "fullText": "IMPORTANT: Translate the COMPLETE article to Russian. Do NOT summarize or cut content. Preserve ALL specific details: all country names and specific requirements, all numbers, dates, deadlines, all step-by-step instructions, all links to official resources mentioned. Minimum length: 80% of original content length. Write as a complete helpful article, not a summary. Format with paragraphs. Use headers where original has them. This is a knowledge resource — readers need full details."
-    }
-  }
-}
+{"relevanceScore":number 0-100,"detectedCountry":"one of: Slovakia,Poland,Germany,Czech Republic,Spain,Italy,Romania,Bulgaria,Portugal,Austria,Netherlands,France,United Kingdom,Turkey,Ukraine,European Union","tags":["tag1","tag2"]}
 
-For detectedCountry: if the article mentions a specific EU country → use that country name. If it covers EU-wide policy with no single country focus → use "European Union".
+Score 80-100: directly about Ukrainians, TP status, residence permits, displaced persons.
+Score 50-79: work permits, social benefits, housing, integration, health, school, banking for migrants in EU.
+Score 20-49: general migration stats, EU policy debates, economic news affecting migrants.
+Score 0-19: domestic politics, sports, crime, culture with no migration angle.
+NOT relevant (score 0-15): other refugee groups (Syrian/Afghan/African), general EU politics, disasters unrelated to Ukrainian relocation.
+Keywords: ${keywordsStr}`
 
-RELEVANCE SCORING — our audience is Ukrainian/Russian-speaking migrants and refugees living in Europe. Be generous.
-
-Score 80-100 (HIGHLY RELEVANT — definitely save):
-- Directly mentions Ukraine, Ukrainians, Russian speakers, or displaced persons
-- Covers temporary protection, Section 17/Section 15 directives, TP status changes
-- Covers residence permits, visas, registration procedures
-
-Score 50-79 (RELEVANT — save for review):
-- ANY aspect of daily life for migrants/refugees in Europe:
-  work permits, employment rights, taxes, social insurance, health insurance
-  housing assistance, social benefits, integration programs
-  language courses, recognition of foreign qualifications, banking
-  school enrollment, childcare, family reunification
-- ANY change in law or procedure that could affect foreigners living in EU countries
-- Asylum rules, refugee status, migration policy updates
-- EU-wide regulations affecting non-EU residents
-
-Score 20-49 (POSSIBLY RELEVANT — save but auto-reject for manual check):
-- General migration/asylum statistics or reports
-- EU policy debates that may lead to future changes
-- Economic news (minimum wage, inflation) indirectly affecting migrants
-
-Score 0-19 (NOT RELEVANT — skip):
-- Purely domestic political news with no migration dimension
-- Sports, entertainment, culture unrelated to integration
-- Crime, disasters unrelated to migrant issues
-- Administrative/organizational news irrelevant to daily life
-
-IMPORTANT: This article is ONLY relevant if it specifically mentions:
-- Ukrainian people / refugees / migrants
-- OR temporary protection status (TP / TPS)
-- OR residence permits for foreigners in Europe
-- OR social / legal rights for Ukrainian relocants
-
-Articles about OTHER refugee groups (Syrian, Afghan, African, Georgian) are NOT relevant — score 0-15.
-Articles about general European politics with no migration dimension are NOT relevant — score 0-15.
-Articles about conflicts, disasters, or crime unrelated to Ukrainian relocation are NOT relevant — score 0-15.
-
-Keywords indicating relevance: ${keywordsStr}`
+  let score = 0
+  let detectedCountry: string | undefined
+  let tags: string[] = []
 
   try {
-    const response = await anthropic.messages.create({
+    const filterRes = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 3000,
-      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 200,
+      messages: [{ role: 'user', content: filterPrompt }],
     })
-
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
-
-    // Strip markdown code fences if Claude wraps response in them
-    const jsonText = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
-
-    const parsed = JSON.parse(jsonText) as {
-      isRelevant: boolean
+    const filterText = filterRes.content[0].type === 'text' ? filterRes.content[0].text : ''
+    const filterJson = filterText.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+    const filterParsed = JSON.parse(filterJson) as {
       relevanceScore: number
       detectedCountry?: string
       tags: string[]
-      translations: {
-        uk?: { title?: string; summary?: string; fullText?: string }
-        ru?: { title?: string; summary?: string; fullText?: string }
-      }
     }
+    score = filterParsed.relevanceScore ?? 0
+    detectedCountry = filterParsed.detectedCountry
+    tags = filterParsed.tags ?? []
+  } catch (e) {
+    console.error('Haiku filter failed:', e)
+    return null
+  }
 
-    const score = parsed.relevanceScore ?? 0
-    const country = parsed.detectedCountry || urlCountry || source.country
+  const country = detectedCountry || urlCountry || source.country
+
+  // Stop here — irrelevant articles don't need translation
+  if (score < 30) {
+    return {
+      sourceId: source.id,
+      url: article.url,
+      originalTitle: article.title,
+      originalContent: article.content,
+      originalLanguage: source.language,
+      tags: [...tags, ...source.tags],
+      relevanceScore: score,
+      isRelevant: false,
+      country,
+      publishedAt: article.publishedAt,
+      status: 'rejected',
+    }
+  }
+
+  // ── Call 2: Sonnet — translation only (quality, runs for relevant articles) ──
+  const translatePrompt = `Translate this article to Ukrainian and Russian for relocants living in Europe.
+Respond with ONLY valid JSON (no markdown, no explanation).
+
+TITLE: ${article.title}
+CONTENT: ${article.content.slice(0, 8000)}
+
+{
+  "uk": {
+    "title": "title in Ukrainian",
+    "summary": "2-3 sentence summary in Ukrainian — what changed and what relocants need to do",
+    "fullText": "COMPLETE translation to Ukrainian. Translate EXACTLY — preserve ALL numbers, dates, deadlines, country names, step-by-step instructions, links to official resources. Do NOT summarize or shorten. Format with paragraphs and headers matching the original structure."
+  },
+  "ru": {
+    "title": "title in Russian",
+    "summary": "2-3 sentence summary in Russian — what changed and what relocants need to do",
+    "fullText": "COMPLETE translation to Russian. Translate EXACTLY — preserve ALL numbers, dates, deadlines, country names, step-by-step instructions, links to official resources. Do NOT summarize or shorten. Format with paragraphs and headers matching the original structure."
+  }
+}`
+
+  try {
+    const translateRes = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: translatePrompt }],
+    })
+    const translateText = translateRes.content[0].type === 'text' ? translateRes.content[0].text : ''
+    const translateJson = translateText.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+    const translated = JSON.parse(translateJson) as {
+      uk?: { title?: string; summary?: string; fullText?: string }
+      ru?: { title?: string; summary?: string; fullText?: string }
+    }
 
     return {
       sourceId: source.id,
@@ -358,23 +355,35 @@ Keywords indicating relevance: ${keywordsStr}`
       originalTitle: article.title,
       originalContent: article.content,
       originalLanguage: source.language,
-      titleUk: parsed.translations?.uk?.title,
-      titleRu: parsed.translations?.ru?.title,
-      summaryUk: parsed.translations?.uk?.summary,
-      summaryRu: parsed.translations?.ru?.summary,
-      fullTextUk: parsed.translations?.uk?.fullText,
-      fullTextRu: parsed.translations?.ru?.fullText,
-      tags: [...(parsed.tags ?? []), ...source.tags],
+      titleUk: translated.uk?.title,
+      titleRu: translated.ru?.title,
+      summaryUk: translated.uk?.summary,
+      summaryRu: translated.ru?.summary,
+      fullTextUk: translated.uk?.fullText,
+      fullTextRu: translated.ru?.fullText,
+      tags: [...tags, ...source.tags],
       relevanceScore: score,
-      isRelevant: score >= 20,
+      isRelevant: true,
       country,
       publishedAt: article.publishedAt,
-      // 25+ goes to pending_review for human check, 20-24 auto-rejected but saved
-      status: score >= 25 ? 'pending_review' : 'rejected',
+      status: score >= 50 ? 'pending_review' : 'rejected',
     }
   } catch (e) {
-    console.error('Claude processing failed:', e)
-    return null
+    console.error('Sonnet translation failed:', e)
+    // Return without translations rather than dropping the article entirely
+    return {
+      sourceId: source.id,
+      url: article.url,
+      originalTitle: article.title,
+      originalContent: article.content,
+      originalLanguage: source.language,
+      tags: [...tags, ...source.tags],
+      relevanceScore: score,
+      isRelevant: true,
+      country,
+      publishedAt: article.publishedAt,
+      status: 'rejected',
+    }
   }
 }
 
