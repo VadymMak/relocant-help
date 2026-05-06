@@ -25,7 +25,7 @@ function ArticlesClientPageInner({ articles, countries }: { articles: ArticleCar
   const t = useTranslations('articles')
   const locale = useLocale()
   const searchParams = useSearchParams()
-  const [activeFilter, setActiveFilter] = useState('ALL')
+  const [activeFilter, setActiveFilter] = useState(searchParams.get('country') ?? 'ALL')
   const [page, setPage] = useState(1)
 
   // ── Search state ──────────────────────────────────────────

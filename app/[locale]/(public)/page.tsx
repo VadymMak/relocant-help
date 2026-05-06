@@ -182,16 +182,21 @@ export default async function HomePage() {
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
           {countryFilters.map(({ label, code }, i) => (
-            <button key={code} style={{
-              padding: '7px 16px', borderRadius: 'var(--rh-radius-pill)',
-              border: i === 0 ? 'none' : '1px solid var(--rh-border)',
-              background: i === 0 ? 'var(--rh-navy)' : 'white',
-              color: i === 0 ? 'white' : 'var(--rh-fg-2)',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              boxShadow: i === 0 ? 'none' : 'var(--rh-shadow-xs)',
-            }}>
+            <Link
+              key={code}
+              href={code === 'ALL' ? '/articles' : `/articles?country=${encodeURIComponent(code)}`}
+              style={{
+                display: 'inline-block',
+                padding: '7px 16px', borderRadius: 'var(--rh-radius-pill)',
+                border: i === 0 ? 'none' : '1px solid var(--rh-border)',
+                background: i === 0 ? 'var(--rh-navy)' : 'white',
+                color: i === 0 ? 'white' : 'var(--rh-fg-2)',
+                fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                boxShadow: i === 0 ? 'none' : 'var(--rh-shadow-xs)',
+              }}
+            >
               {label}
-            </button>
+            </Link>
           ))}
         </div>
 
