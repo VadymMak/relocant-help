@@ -11,6 +11,7 @@ export interface SourceRow {
   rssUrl: string | null
   active: boolean
   isOverridden: boolean
+  isCustom: boolean
   articleCount: number
   lastRun: {
     runAt: string | null
@@ -41,11 +42,62 @@ interface FixResponse {
   results: FixResult[]
 }
 
+interface AddSourceForm {
+  url: string
+  country: string
+  name: string
+  sourceType: string
+  checkIntervalHours: number
+}
+
+interface AddSourceResult {
+  success?: boolean
+  error?: string
+  detectedName?: string
+  hasRss?: boolean
+  rssUrl?: string | null
+  sourceId?: string
+}
+
+const COUNTRIES = [
+  'Slovakia', 'Poland', 'Germany', 'Czech Republic', 'Spain',
+  'Italy', 'Romania', 'Bulgaria', 'Portugal', 'Turkey', 'European Union', 'Other',
+]
+
 export default function SourcesClient({ sources: initial }: { sources: SourceRow[] }) {
   const [sources] = useState(initial)
   const [checkStatus, setCheckStatus] = useState<Record<string, CheckStatus>>({})
   const [fixing, setFixing] = useState(false)
   const [fixResults, setFixResults] = useState<FixResponse | null>(null)
+
+  const [form, setForm] = useState<AddSourceForm>({
+    url: '', country: 'European Union', name: '', sourceType: 'scrape', checkIntervalHours: 24,
+  })
+  const [adding, setAdding] = useState(false)
+  const [addResult, setAddResult] = useState<AddSourceResult | null>(null)
+
+  async function handleAddSource(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.url.trim()) return
+    setAdding(true)
+    setAddResult(null)
+    try {
+      const res = await fetch('/api/admin/add-source', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json() as AddSourceResult
+      setAddResult(data)
+      if (data.success) {
+        setForm({ url: '', country: 'European Union', name: '', sourceType: 'scrape', checkIntervalHours: 24 })
+      }
+    } catch {
+      setAddResult({ error: 'Network error' })
+    } finally {
+      setAdding(false)
+    }
+  }
 
   async function checkUrl(sourceId: string, url: string) {
     setCheckStatus(prev => ({ ...prev, [sourceId]: { checking: true } }))
@@ -199,6 +251,12 @@ export default function SourcesClient({ sources: initial }: { sources: SourceRow
                         background: 'var(--rh-bg-alt)', color: 'var(--rh-fg-3)',
                         borderRadius: 'var(--rh-radius-pill)', padding: '1px 8px', fontSize: 11,
                       }}>{source.id}</span>
+                      {source.isCustom && (
+                        <span style={{
+                          background: 'rgba(29,158,117,0.12)', color: 'var(--rh-teal)',
+                          borderRadius: 'var(--rh-radius-pill)', padding: '1px 8px', fontSize: 11, fontWeight: 600,
+                        }}>custom</span>
+                      )}
                       {source.isOverridden && (
                         <span style={{
                           background: 'var(--rh-blue-100)', color: 'var(--rh-blue-700)',
@@ -317,6 +375,172 @@ export default function SourcesClient({ sources: initial }: { sources: SourceRow
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Add New Source ───────────────────────────────────── */}
+      <div style={{ marginTop: 40 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px', color: 'var(--rh-fg)' }}>
+          Add New Source
+        </h2>
+        <p style={{ fontSize: 13, color: 'var(--rh-fg-2)', margin: '0 0 20px' }}>
+          Add any website or RSS feed as a permanent crawler source. It will be crawled automatically on the next run.
+        </p>
+
+        <form onSubmit={handleAddSource} style={{
+          background: 'white', border: '1px solid var(--rh-border)',
+          borderRadius: 'var(--rh-radius-lg)', padding: 28,
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16,
+        }}>
+          {/* URL */}
+          <div style={{ gridColumn: 'span 2' }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--rh-fg-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              URL *
+            </label>
+            <input
+              type="url"
+              required
+              value={form.url}
+              onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+              placeholder="https://example.com/news or https://example.com/feed.xml"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                padding: '9px 12px', border: '1.5px solid var(--rh-border)',
+                borderRadius: 'var(--rh-radius-md)', fontSize: 13,
+                fontFamily: 'var(--rh-font)', color: 'var(--rh-fg)',
+                background: 'var(--rh-bg)',
+              }}
+            />
+          </div>
+
+          {/* Country */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--rh-fg-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Country
+            </label>
+            <select
+              value={form.country}
+              onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
+              style={{
+                width: '100%', padding: '9px 12px', border: '1.5px solid var(--rh-border)',
+                borderRadius: 'var(--rh-radius-md)', fontSize: 13,
+                fontFamily: 'var(--rh-font)', color: 'var(--rh-fg)', background: 'var(--rh-bg)',
+              }}
+            >
+              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--rh-fg-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Name (optional — auto-detected)
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. Migration News Slovakia"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                padding: '9px 12px', border: '1.5px solid var(--rh-border)',
+                borderRadius: 'var(--rh-radius-md)', fontSize: 13,
+                fontFamily: 'var(--rh-font)', color: 'var(--rh-fg)', background: 'var(--rh-bg)',
+              }}
+            />
+          </div>
+
+          {/* Type */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--rh-fg-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Type
+            </label>
+            <select
+              value={form.sourceType}
+              onChange={e => setForm(f => ({ ...f, sourceType: e.target.value }))}
+              style={{
+                width: '100%', padding: '9px 12px', border: '1.5px solid var(--rh-border)',
+                borderRadius: 'var(--rh-radius-md)', fontSize: 13,
+                fontFamily: 'var(--rh-font)', color: 'var(--rh-fg)', background: 'var(--rh-bg)',
+              }}
+            >
+              <option value="scrape">News page (scrape)</option>
+              <option value="rss">RSS feed</option>
+              <option value="government">Government site</option>
+            </select>
+          </div>
+
+          {/* Interval */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--rh-fg-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Check interval
+            </label>
+            <select
+              value={form.checkIntervalHours}
+              onChange={e => setForm(f => ({ ...f, checkIntervalHours: Number(e.target.value) }))}
+              style={{
+                width: '100%', padding: '9px 12px', border: '1.5px solid var(--rh-border)',
+                borderRadius: 'var(--rh-radius-md)', fontSize: 13,
+                fontFamily: 'var(--rh-font)', color: 'var(--rh-fg)', background: 'var(--rh-bg)',
+              }}
+            >
+              <option value={6}>Every 6 hours</option>
+              <option value={12}>Every 12 hours</option>
+              <option value={24}>Daily</option>
+              <option value={48}>Every 2 days</option>
+              <option value={168}>Weekly</option>
+            </select>
+          </div>
+
+          {/* Submit */}
+          <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button
+              type="submit"
+              disabled={adding || !form.url.trim()}
+              style={{
+                background: adding || !form.url.trim() ? 'var(--rh-bg-alt)' : 'var(--rh-teal)',
+                color: adding || !form.url.trim() ? 'var(--rh-fg-3)' : 'white',
+                border: 0, borderRadius: 'var(--rh-radius-md)',
+                padding: '10px 24px', fontSize: 13, fontWeight: 700,
+                cursor: adding || !form.url.trim() ? 'default' : 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              {adding ? (
+                <>
+                  <span style={{
+                    display: 'inline-block', width: 12, height: 12,
+                    border: '2px solid var(--rh-fg-3)', borderTopColor: 'transparent',
+                    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+                  }} />
+                  Перевіряємо...
+                </>
+              ) : 'Перевірити та додати'}
+            </button>
+
+            {addResult && (
+              addResult.success ? (
+                <div style={{
+                  padding: '10px 16px', background: 'rgba(29,158,117,0.08)',
+                  border: '1px solid rgba(29,158,117,0.25)', borderRadius: 'var(--rh-radius-md)',
+                  fontSize: 13,
+                }}>
+                  <span style={{ color: 'var(--rh-teal)', fontWeight: 700 }}>✓ Added: </span>
+                  {addResult.detectedName}
+                  {addResult.hasRss && <span style={{ color: 'var(--rh-fg-3)', marginLeft: 8 }}>· RSS detected</span>}
+                  <span style={{ color: 'var(--rh-fg-3)', marginLeft: 8 }}>· Reload to see in table</span>
+                </div>
+              ) : (
+                <div style={{
+                  padding: '10px 16px', background: 'rgba(220,38,38,0.06)',
+                  border: '1px solid rgba(220,38,38,0.2)', borderRadius: 'var(--rh-radius-md)',
+                  fontSize: 13, color: '#dc2626',
+                }}>
+                  {addResult.error}
+                </div>
+              )
+            )}
+          </div>
+        </form>
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

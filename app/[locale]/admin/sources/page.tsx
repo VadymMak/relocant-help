@@ -1,5 +1,4 @@
 import { getSources } from '@/lib/db/sources-config'
-import { CRAWLER_SOURCES } from '@/lib/crawler/sources'
 import { getPrisma } from '@/lib/db'
 import SourcesClient, { type SourceRow } from './SourcesClient'
 
@@ -11,16 +10,16 @@ export default async function AdminSourcesPage() {
     getPrisma().sourceConfig.findMany(),
   ])
 
-  const sourceIds = CRAWLER_SOURCES.map(s => s.id)
+  const allSourceIds = sources.map(s => s.id)
 
   const [articleCounts, lastRuns] = await Promise.all([
     getPrisma().crawledArticle.groupBy({
       by: ['sourceId'],
-      where: { sourceId: { in: sourceIds } },
+      where: { sourceId: { in: allSourceIds } },
       _count: { id: true },
     }),
     getPrisma().crawlerLog.findMany({
-      where: { sourceId: { in: sourceIds } },
+      where: { sourceId: { in: allSourceIds } },
       orderBy: { runAt: 'desc' },
       distinct: ['sourceId'],
       select: { sourceId: true, status: true, error: true, runAt: true },
@@ -31,6 +30,7 @@ export default async function AdminSourcesPage() {
     const count = articleCounts.find(a => a.sourceId === source.id)?._count.id ?? 0
     const run = lastRuns.find(r => r.sourceId === source.id)
     const override = overrides.find(o => o.sourceId === source.id)
+    const isCustom = override?.isCustom ?? false
 
     return {
       id: source.id,
@@ -40,7 +40,8 @@ export default async function AdminSourcesPage() {
       url: source.url,
       rssUrl: source.rssUrl ?? null,
       active: source.active,
-      isOverridden: !!override,
+      isOverridden: !isCustom && !!override,
+      isCustom,
       articleCount: count,
       lastRun: run
         ? { runAt: run.runAt?.toISOString() ?? null, status: run.status, error: run.error ?? null }
