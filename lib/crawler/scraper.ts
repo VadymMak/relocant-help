@@ -1,3 +1,5 @@
+import { extract } from '@extractus/article-extractor'
+
 interface RawArticle {
   sourceId: string
   url: string
@@ -81,22 +83,37 @@ export async function scrapeNewsPages(): Promise<RawArticle[]> {
       for (const link of links) {
         if (count >= 5) break
 
-        const slug = link.split('/').filter(Boolean).pop() ?? ''
-        const title = slug.replace(/-/g, ' ')
+        try {
+          const extracted = await extract(link, {}, { signal: AbortSignal.timeout(15000) })
+          if (!extracted) continue
 
-        if (!title || title.length < 5) continue
+          const content = extracted.content
+            ? extracted.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 8000)
+            : extracted.description ?? ''
 
-        articles.push({
-          sourceId: source.id,
-          url: link,
-          title,
-          content: '',
-          language: 'en',
-        })
-        count++
+          if (content.length < 100) continue
+
+          const slug = link.split('/').filter(Boolean).pop() ?? ''
+          const title = extracted.title || slug.replace(/-/g, ' ')
+          if (!title || title.length < 5) continue
+
+          articles.push({
+            sourceId: source.id,
+            url: link,
+            title,
+            content,
+            publishedAt: extracted.published ?? undefined,
+            language: 'en',
+          })
+          count++
+
+          await new Promise(r => setTimeout(r, 1500))
+        } catch (err) {
+          console.error(`[Scraper] extract failed for ${link}:`, err)
+        }
       }
 
-      console.log(`[Scraper] ${source.id} → ${count} links extracted`)
+      console.log(`[Scraper] ${source.id} → ${count} articles extracted`)
 
       await new Promise(r => setTimeout(r, 2000))
     } catch (err) {

@@ -1,3 +1,4 @@
+import { extract } from '@extractus/article-extractor'
 import Anthropic from '@anthropic-ai/sdk'
 import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
 import { getSources } from '@/lib/db/sources-config'
@@ -111,26 +112,24 @@ export async function fetchPage(url: string): Promise<RawArticle[]> {
   }]
 }
 
-// ── Step 2b: Enrich RSS item with full page content ────────
-async function enrichWithFullPage(article: RawArticle): Promise<RawArticle> {
-  if (article.content.length >= 100) return article
-
+// ── Step 2b: Extract full article content via article-extractor
+async function enrichWithFullPage(url: string): Promise<string> {
   try {
-    const res = await fetch(article.url, {
-      headers: { 'User-Agent': 'relocant.help/1.0' },
-      next: { revalidate: 0 },
-      signal: AbortSignal.timeout(10000),
-    })
-    if (!res.ok) return article
-    const html = await res.text()
-    const fullText = extractText(html)
-    if (fullText.length > article.content.length) {
-      return { ...article, content: fullText }
+    const article = await extract(url, {}, { signal: AbortSignal.timeout(15000) })
+
+    if (article?.content) {
+      return article.content
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 8000)
     }
-  } catch {
-    // Fall back to RSS description if page fetch fails
+
+    if (article?.description) return article.description
+  } catch (err) {
+    console.error(`[extract] Failed for ${url}:`, err)
   }
-  return article
+  return ''
 }
 
 // ── Layer 3: Extract article links from a news list page ───
@@ -414,8 +413,9 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
         })
         if (existing) continue
 
-        const enriched = await enrichWithFullPage(raw)
-        if (!enriched.content || enriched.content.length < 100) continue
+        const content = await enrichWithFullPage(raw.url)
+        if (content.length < 100) continue
+        const enriched = { ...raw, content }
 
         const scrapeSource: CrawlerSource = {
           id: raw.sourceId,
@@ -496,7 +496,8 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
         })
         if (existing) continue
 
-        const enriched = await enrichWithFullPage(raw)
+        const fetchedContent = await enrichWithFullPage(raw.url)
+        const enriched = { ...raw, content: fetchedContent || raw.content }
 
         const googleSource: CrawlerSource = {
           id: 'googlenews',
@@ -683,7 +684,9 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
         if (existing) continue
 
         // Enrich RSS items that only have a short description
-        const enriched = source.rssUrl ? await enrichWithFullPage(raw) : raw
+        const enriched = source.rssUrl
+          ? { ...raw, content: (await enrichWithFullPage(raw.url)) || raw.content }
+          : raw
 
         const article = await processWithClaude(enriched, source)
         processed++
