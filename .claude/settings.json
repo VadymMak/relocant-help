@@ -43,7 +43,9 @@
       "Bash(sed -n '195,210p' /Users/vadymmak/Documents/projects/relocant-help/messages/ru.json)",
       "Bash(sed -n '195,210p' /Users/vadymmak/Documents/projects/relocant-help/messages/en.json)",
       "Bash(mkdir -p /Users/vadymmak/Documents/projects/relocant-help/app/\\\\[locale\\\\]/admin/import /Users/vadymmak/Documents/projects/relocant-help/app/api/admin/import-url)",
-      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add 'app/[locale]/admin/import/page.tsx' app/api/admin/import-url/route.ts 'app/[locale]/admin/AdminSidebar.tsx' messages/uk.json messages/ru.json messages/en.json)"
+      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add 'app/[locale]/admin/import/page.tsx' app/api/admin/import-url/route.ts 'app/[locale]/admin/AdminSidebar.tsx' messages/uk.json messages/ru.json messages/en.json)",
+      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add lib/crawler/googlenews.ts lib/crawler/crawl.ts)",
+      "Bash(git -C /Users/vadymmak/Documents/projects/relocant-help add lib/crawler/crawl.ts)"
     ],
     "additionalDirectories": [
       "/Users/vadymmak/Documents/projects/relocant-help/app/[locale]/admin"
