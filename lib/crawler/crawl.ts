@@ -220,18 +220,46 @@ function extractText(html: string): string {
     .slice(0, 8000)
 }
 
+// ── Country detection from URL (first-pass before Claude) ─────
+function detectCountryFromUrl(url: string): string | null {
+  try {
+    const { hostname, pathname } = new URL(url)
+    const full = `${hostname}${pathname}`.toLowerCase()
+    const tld = hostname.split('.').pop() ?? ''
+
+    if (tld === 'es' || full.includes('spain') || full.includes('españa')) return 'Spain'
+    if (tld === 'it' || full.includes('italy') || full.includes('italia')) return 'Italy'
+    if (tld === 'pl' || full.includes('poland') || full.includes('polska')) return 'Poland'
+    if (tld === 'de' || full.includes('germany') || full.includes('deutschland')) return 'Germany'
+    if (tld === 'sk' || full.includes('slovakia') || full.includes('slovensko')) return 'Slovakia'
+    if (tld === 'cz' || full.includes('czech') || full.includes('czechia')) return 'Czech Republic'
+    if (tld === 'ro' || full.includes('romania') || full.includes('românia')) return 'Romania'
+    if (tld === 'bg' || full.includes('bulgaria') || full.includes('българия')) return 'Bulgaria'
+    if (tld === 'at' || full.includes('austria') || full.includes('österreich')) return 'Austria'
+    if (tld === 'hu' || full.includes('hungary') || full.includes('magyarország')) return 'Hungary'
+    if (tld === 'pt' || full.includes('portugal')) return 'Portugal'
+    if (tld === 'nl' || full.includes('netherlands') || full.includes('nederland')) return 'Netherlands'
+    if (tld === 'fr' || full.includes('france')) return 'France'
+  } catch {
+    // ignore malformed URLs
+  }
+  return null
+}
+
 // ── Step 3: Claude AI filters and translates ───────────────
 export async function processWithClaude(
   article: RawArticle,
   source: CrawlerSource
 ): Promise<ProcessedArticle | null> {
   const keywordsStr = RELEVANCE_KEYWORDS.join(', ')
+  const urlCountry = detectCountryFromUrl(article.url)
+  const countryHint = urlCountry ?? source.country
 
   const prompt = `You are an assistant helping Ukrainian and Russian-speaking relocants in Europe.
 
 Analyze this article from a government or international organization website and respond with ONLY valid JSON (no markdown, no explanation).
 
-SOURCE: ${source.name} (${source.country})
+SOURCE: ${source.name} (${countryHint})
 ARTICLE TITLE: ${article.title}
 ARTICLE CONTENT: ${article.content.slice(0, 4000)}
 
@@ -240,6 +268,7 @@ Respond with this exact JSON structure:
   "isRelevant": boolean,
   "relevanceScore": number 0-100,
   "relevanceReason": "one sentence why relevant or not",
+  "detectedCountry": "the European country this article is primarily about — one of: Slovakia, Poland, Germany, Czech Republic, Spain, Italy, Romania, Bulgaria, Portugal, Austria, Netherlands, France, United Kingdom, Turkey, Ukraine, European Union",
   "tags": ["tag1", "tag2"],
   "translations": {
     "uk": {
@@ -254,6 +283,8 @@ Respond with this exact JSON structure:
     }
   }
 }
+
+For detectedCountry: if the article mentions a specific EU country → use that country name. If it covers EU-wide policy with no single country focus → use "European Union".
 
 RELEVANCE SCORING — our audience is Ukrainian/Russian-speaking migrants and refugees living in Europe. Be generous.
 
@@ -310,6 +341,7 @@ Keywords indicating relevance: ${keywordsStr}`
     const parsed = JSON.parse(jsonText) as {
       isRelevant: boolean
       relevanceScore: number
+      detectedCountry?: string
       tags: string[]
       translations: {
         uk?: { title?: string; summary?: string; fullText?: string }
@@ -318,6 +350,7 @@ Keywords indicating relevance: ${keywordsStr}`
     }
 
     const score = parsed.relevanceScore ?? 0
+    const country = parsed.detectedCountry || urlCountry || source.country
 
     return {
       sourceId: source.id,
@@ -334,7 +367,7 @@ Keywords indicating relevance: ${keywordsStr}`
       tags: [...(parsed.tags ?? []), ...source.tags],
       relevanceScore: score,
       isRelevant: score >= 20,
-      country: source.country,
+      country,
       publishedAt: article.publishedAt,
       // 25+ goes to pending_review for human check, 20-24 auto-rejected but saved
       status: score >= 25 ? 'pending_review' : 'rejected',
