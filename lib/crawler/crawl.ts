@@ -261,7 +261,7 @@ Analyze this article from a government or international organization website and
 
 SOURCE: ${source.name} (${countryHint})
 ARTICLE TITLE: ${article.title}
-ARTICLE CONTENT: ${article.content.slice(0, 4000)}
+ARTICLE CONTENT: ${article.content.slice(0, 8000)}
 
 Respond with this exact JSON structure:
 {
@@ -274,12 +274,12 @@ Respond with this exact JSON structure:
     "uk": {
       "title": "title in Ukrainian",
       "summary": "2-3 sentence summary in Ukrainian explaining what changed and what relocants need to do",
-      "fullText": "full helpful explanation in Ukrainian (200-400 words)"
+      "fullText": "IMPORTANT: Translate the COMPLETE article to Ukrainian. Do NOT summarize or cut content. Preserve ALL specific details: all country names and specific requirements, all numbers, dates, deadlines, all step-by-step instructions, all links to official resources mentioned. Minimum length: 80% of original content length. Write as a complete helpful article, not a summary. Format with paragraphs. Use headers where original has them. This is a knowledge resource — readers need full details."
     },
     "ru": {
       "title": "title in Russian",
       "summary": "2-3 sentence summary in Russian",
-      "fullText": "full explanation in Russian (200-400 words)"
+      "fullText": "IMPORTANT: Translate the COMPLETE article to Russian. Do NOT summarize or cut content. Preserve ALL specific details: all country names and specific requirements, all numbers, dates, deadlines, all step-by-step instructions, all links to official resources mentioned. Minimum length: 80% of original content length. Write as a complete helpful article, not a summary. Format with paragraphs. Use headers where original has them. This is a knowledge resource — readers need full details."
     }
   }
 }
@@ -329,7 +329,7 @@ Keywords indicating relevance: ${keywordsStr}`
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }],
     })
 
