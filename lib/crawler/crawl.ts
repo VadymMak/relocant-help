@@ -240,6 +240,12 @@ function detectCountryFromUrl(url: string): string | null {
     if (tld === 'pt' || full.includes('portugal')) return 'Portugal'
     if (tld === 'nl' || full.includes('netherlands') || full.includes('nederland')) return 'Netherlands'
     if (tld === 'fr' || full.includes('france')) return 'France'
+    if (tld === 'dk' || full.includes('denmark') || full.includes('danmark')) return 'Denmark'
+    if (tld === 'no' || full.includes('norway') || full.includes('norge')) return 'Norway'
+    if (tld === 'se' || full.includes('sweden') || full.includes('sverige')) return 'Sweden'
+    if (tld === 'fi' || full.includes('finland') || full.includes('suomi')) return 'Finland'
+    if (tld === 'be' || full.includes('belgium') || full.includes('belgie') || full.includes('belgique')) return 'Belgium'
+    if (tld === 'gb' || tld === 'uk' || full.includes('united kingdom') || full.includes('britain')) return 'United Kingdom'
   } catch {
     // ignore malformed URLs
   }
@@ -263,7 +269,7 @@ SOURCE: ${source.name} (${countryHint})
 TITLE: ${article.title}
 CONTENT (first 2000 chars): ${article.content.slice(0, 2000)}
 
-{"relevanceScore":number 0-100,"detectedCountry":"one of: Slovakia,Poland,Germany,Czech Republic,Spain,Italy,Romania,Bulgaria,Portugal,Austria,Netherlands,France,United Kingdom,Turkey,Ukraine,European Union","tags":["tag1","tag2"]}
+{"relevanceScore":number 0-100,"detectedCountry":"one of: Slovakia,Poland,Germany,Czech Republic,Spain,Italy,Romania,Bulgaria,Portugal,Austria,Netherlands,France,Belgium,Denmark,Norway,Sweden,Finland,United Kingdom,Turkey,Ukraine,Hungary,European Union","tags":["tag1","tag2"]}
 
 Score 80-100: directly about Ukrainians, TP status, residence permits, displaced persons.
 Score 50-79: work permits, social benefits, housing, integration, health, school, banking for migrants in EU.
@@ -279,7 +285,7 @@ Keywords: ${keywordsStr}`
   try {
     const filterRes = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
+      max_tokens: 300,
       messages: [{ role: 'user', content: filterPrompt }],
     })
     const filterText = filterRes.content[0].type === 'text' ? filterRes.content[0].text : ''
@@ -317,22 +323,35 @@ Keywords: ${keywordsStr}`
   }
 
   // ── Call 2: Sonnet — translation only (quality, runs for relevant articles) ──
-  const translatePrompt = `Translate this article to Ukrainian and Russian for relocants living in Europe.
+  const translatePrompt = `You are a professional translator for a legal/migration news service.
+Translate this article to Ukrainian AND Russian.
 Respond with ONLY valid JSON (no markdown, no explanation).
 
 TITLE: ${article.title}
 CONTENT: ${article.content.slice(0, 8000)}
 
+TRANSLATION RULES (strictly follow):
+- Translate WORD FOR WORD — do not summarize, do not shorten
+- Keep ALL numbers: salaries, amounts, percentages, years
+- Keep ALL dates and deadlines exactly as written
+- Keep ALL country names, city names, institution names
+- Keep ALL official law names and legal terms
+- Keep ALL steps, bullet points, and numbered lists
+- Keep ALL links and references to official resources
+- If original is long → translation must be equally long
+- Minimum translation length: 500 words per language
+- Format with paragraphs and headers matching the original
+
 {
   "uk": {
     "title": "title in Ukrainian",
-    "summary": "2-3 sentence summary in Ukrainian — what changed and what relocants need to do",
-    "fullText": "COMPLETE translation to Ukrainian. Translate EXACTLY — preserve ALL numbers, dates, deadlines, country names, step-by-step instructions, links to official resources. Do NOT summarize or shorten. Format with paragraphs and headers matching the original structure."
+    "summary": "2-3 sentences in Ukrainian: what changed and what relocants must do",
+    "fullText": "complete word-for-word translation to Ukrainian"
   },
   "ru": {
     "title": "title in Russian",
-    "summary": "2-3 sentence summary in Russian — what changed and what relocants need to do",
-    "fullText": "COMPLETE translation to Russian. Translate EXACTLY — preserve ALL numbers, dates, deadlines, country names, step-by-step instructions, links to official resources. Do NOT summarize or shorten. Format with paragraphs and headers matching the original structure."
+    "summary": "2-3 sentences in Russian: what changed and what relocants must do",
+    "fullText": "complete word-for-word translation to Russian"
   }
 }`
 
