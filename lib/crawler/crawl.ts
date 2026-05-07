@@ -323,6 +323,13 @@ Keywords: ${keywordsStr}`
   }
 
   // ── Call 2: Sonnet — translation only (quality, runs for relevant articles) ──
+  console.log('[TRANSLATION DEBUG]', {
+    url: article.url,
+    titleLength: article.title.length,
+    contentLength: article.content.length,
+    contentPreview: article.content.slice(0, 500),
+  })
+
   const translatePrompt = `You are a professional translator for a legal/migration news service.
 Translate this article to Ukrainian AND Russian.
 Respond with ONLY valid JSON (no markdown, no explanation).
