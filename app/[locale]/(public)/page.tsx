@@ -4,8 +4,41 @@ import { Link } from '@/i18n/navigation'
 import { getPrisma } from '@/lib/db'
 import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
 import { getCountryMeta } from '@/lib/utils/countries'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+const TITLES: Record<string, string> = {
+  uk: 'Офіційні новини для українців у Європі | relocant.help',
+  ru: 'Официальные новости для украинцев в Европе | relocant.help',
+  en: 'Official news for Ukrainians in Europe | relocant.help',
+}
+
+const DESCS: Record<string, string> = {
+  uk: 'Збираємо зміни в законодавстві Словаччини, Польщі, Германії та ЄС — перекладаємо зрозумілою мовою щодня.',
+  ru: 'Собираем изменения в законодательстве Словакии, Польши, Германии и ЕС — переводим понятным языком каждый день.',
+  en: 'Collecting legislative changes from Slovakia, Poland, Germany and EU — explained in plain language daily.',
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  return {
+    title: TITLES[locale] ?? TITLES.uk,
+    description: DESCS[locale] ?? DESCS.uk,
+    alternates: {
+      canonical: `https://relocant.help/${locale}`,
+      languages: {
+        'uk': 'https://relocant.help/uk',
+        'ru': 'https://relocant.help/ru',
+        'x-default': 'https://relocant.help/uk',
+      },
+    },
+  }
+}
 
 type HomeArticle = {
   id: string

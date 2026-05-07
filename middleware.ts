@@ -18,7 +18,9 @@ export default function middleware(req: NextRequest) {
     }
   }
 
-  return intlMiddleware(req)
+  const response = intlMiddleware(req)
+  response.headers.set('x-pathname', pathname)
+  return response
 }
 
 export const config = {

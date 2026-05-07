@@ -3,8 +3,45 @@ import { getTranslations, getLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getPrisma } from '@/lib/db'
 import { getLocalizedContent, getLocaleDate } from '@/lib/utils/locale-content'
+import type { Metadata } from 'next'
+import { cache } from 'react'
 
 export const dynamic = 'force-dynamic'
+
+const fetchArticle = cache(async (id: string) =>
+  getPrisma().crawledArticle.findFirst({ where: { id, status: 'approved' } })
+)
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id, locale } = await params
+  let article = null
+  try { article = await fetchArticle(id) } catch { return {} }
+  if (!article) return {}
+
+  const { title: localizedTitle, summary } = getLocalizedContent(article, locale)
+  const title = localizedTitle || article.originalTitle || ''
+  const desc = summary?.slice(0, 160) ?? ''
+
+  return {
+    title: `${title} | relocant.help`,
+    description: desc,
+    openGraph: {
+      title,
+      description: desc,
+      type: 'article',
+      publishedTime: article.publishedAt?.toISOString(),
+      tags: article.tags,
+    },
+    alternates: {
+      canonical: `https://relocant.help/${locale}/articles/${id}`,
+      languages: {
+        'uk': `https://relocant.help/uk/articles/${id}`,
+        'ru': `https://relocant.help/ru/articles/${id}`,
+        'x-default': `https://relocant.help/uk/articles/${id}`,
+      },
+    },
+  }
+}
 
 const COUNTRY_FLAG: Record<string, string> = {
   Slovakia: '🇸🇰', Poland: '🇵🇱', Germany: '🇩🇪',
@@ -69,6 +106,28 @@ function renderFullText(text: string) {
   })
 }
 
+function extractFAQ(text: string): Array<{ q: string; a: string }> {
+  const lines = text.split('\n')
+  const faqs: Array<{ q: string; a: string }> = []
+  let currentQ: string | null = null
+  let currentA: string[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('Q:') || (trimmed.startsWith('?') && trimmed.length > 2)) {
+      if (currentQ && currentA.length) faqs.push({ q: currentQ, a: currentA.join(' ').trim() })
+      currentQ = trimmed.startsWith('Q:') ? trimmed.slice(2).trim() : trimmed.slice(1).trim()
+      currentA = []
+    } else if (trimmed.startsWith('A:') && currentQ) {
+      currentA.push(trimmed.slice(2).trim())
+    } else if (currentQ && trimmed) {
+      currentA.push(trimmed)
+    }
+  }
+  if (currentQ && currentA.length) faqs.push({ q: currentQ, a: currentA.join(' ').trim() })
+  return faqs
+}
+
 export default async function ArticlePage({ params }: Props) {
   const { id } = await params
   const [t, locale] = await Promise.all([getTranslations('articles'), getLocale()])
@@ -80,9 +139,7 @@ export default async function ArticlePage({ params }: Props) {
   let related: NonNullable<DbArticle>[] = []
 
   try {
-    article = await getPrisma().crawledArticle.findFirst({
-      where: { id, status: 'approved' },
-    })
+    article = await fetchArticle(id)
 
     console.log('[ArticlePage] article found:', article ? article.id : null)
 
@@ -105,9 +162,45 @@ export default async function ArticlePage({ params }: Props) {
   const flag = COUNTRY_FLAG[article.country] ?? '🌍'
   const tag = article.tags[0] ?? ''
   const dateStr = getLocaleDate(article.publishedAt, locale)
+  const desc = summary?.slice(0, 160) ?? ''
+
+  const faqs = fullText ? extractFAQ(fullText) : []
+
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: title,
+    description: desc,
+    datePublished: article.publishedAt?.toISOString(),
+    dateModified: article.publishedAt?.toISOString(),
+    author: { '@type': 'Organization', name: 'relocant.help' },
+    publisher: { '@type': 'Organization', name: 'relocant.help', url: 'https://relocant.help' },
+    inLanguage: locale === 'ru' ? 'ru' : 'uk',
+    about: { '@type': 'Thing', name: 'Ukrainian relocants in Europe' },
+  }
+
+  const faqJsonLd = faqs.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  } : null
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
       <section style={{ background: 'var(--rh-navy)', color: 'white', padding: '48px 24px 72px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <Link href="/articles" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
