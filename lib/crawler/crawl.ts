@@ -322,22 +322,8 @@ Keywords: ${keywordsStr}`
     }
   }
 
-  // ── Call 2: Sonnet — translation only (quality, runs for relevant articles) ──
-  console.log('[TRANSLATION DEBUG]', {
-    url: article.url,
-    titleLength: article.title.length,
-    contentLength: article.content.length,
-    contentPreview: article.content.slice(0, 500),
-  })
-
-  const translatePrompt = `You are a professional translator for a legal/migration news service.
-Translate this article to Ukrainian AND Russian.
-Respond with ONLY valid JSON (no markdown, no explanation).
-
-TITLE: ${article.title}
-CONTENT: ${article.content.slice(0, 8000)}
-
-TRANSLATION RULES (strictly follow):
+  // ── Call 2a / 2b: Sonnet — one language per call to avoid token truncation ──
+  const TRANSLATION_RULES = `TRANSLATION RULES (strictly follow):
 - Translate WORD FOR WORD — do not summarize, do not shorten
 - Keep ALL numbers: salaries, amounts, percentages, years
 - Keep ALL dates and deadlines exactly as written
@@ -346,34 +332,53 @@ TRANSLATION RULES (strictly follow):
 - Keep ALL steps, bullet points, and numbered lists
 - Keep ALL links and references to official resources
 - If original is long → translation must be equally long
-- Minimum translation length: 500 words per language
-- Format with paragraphs and headers matching the original
+- Minimum translation length: 500 words
+- Format with paragraphs and headers matching the original`
 
-{
-  "uk": {
-    "title": "title in Ukrainian",
-    "summary": "2-3 sentences in Ukrainian: what changed and what relocants must do",
-    "fullText": "complete word-for-word translation to Ukrainian"
-  },
-  "ru": {
-    "title": "title in Russian",
-    "summary": "2-3 sentences in Russian: what changed and what relocants must do",
-    "fullText": "complete word-for-word translation to Russian"
+  function buildPrompt(lang: 'Ukrainian' | 'Russian', content: string): string {
+    return `You are a professional translator for a legal/migration news service.
+Translate this article to ${lang}.
+Respond with ONLY valid JSON (no markdown, no explanation).
+
+TITLE: ${article.title}
+CONTENT: ${content}
+
+${TRANSLATION_RULES}
+
+{"title":"title in ${lang}","summary":"2-3 sentences in ${lang}: what changed and what relocants must do","fullText":"complete word-for-word translation to ${lang}"}`
   }
-}`
+
+  async function callTranslation(
+    lang: 'Ukrainian' | 'Russian',
+    content: string
+  ): Promise<{ title?: string; summary?: string; fullText?: string } | null> {
+    for (const slice of [content, content.slice(0, 4000)]) {
+      try {
+        const res = await anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: buildPrompt(lang, slice) }],
+        })
+        const text = res.content[0].type === 'text' ? res.content[0].text : ''
+        const cleaned = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+        return JSON.parse(cleaned) as { title?: string; summary?: string; fullText?: string }
+      } catch (e) {
+        if (slice === content) {
+          console.warn(`[Translation] ${lang} parse failed, retrying with shorter content:`, e)
+        } else {
+          console.error(`[Translation] ${lang} failed on retry:`, e)
+        }
+      }
+    }
+    return null
+  }
 
   try {
-    const translateRes = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: translatePrompt }],
-    })
-    const translateText = translateRes.content[0].type === 'text' ? translateRes.content[0].text : ''
-    const translateJson = translateText.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
-    const translated = JSON.parse(translateJson) as {
-      uk?: { title?: string; summary?: string; fullText?: string }
-      ru?: { title?: string; summary?: string; fullText?: string }
-    }
+    const content = article.content.slice(0, 8000)
+    const [uk, ru] = await Promise.all([
+      callTranslation('Ukrainian', content),
+      callTranslation('Russian', content),
+    ])
 
     return {
       sourceId: source.id,
@@ -381,12 +386,12 @@ TRANSLATION RULES (strictly follow):
       originalTitle: article.title,
       originalContent: article.content,
       originalLanguage: source.language,
-      titleUk: translated.uk?.title,
-      titleRu: translated.ru?.title,
-      summaryUk: translated.uk?.summary,
-      summaryRu: translated.ru?.summary,
-      fullTextUk: translated.uk?.fullText,
-      fullTextRu: translated.ru?.fullText,
+      titleUk: uk?.title,
+      titleRu: ru?.title,
+      summaryUk: uk?.summary,
+      summaryRu: ru?.summary,
+      fullTextUk: uk?.fullText,
+      fullTextRu: ru?.fullText,
       tags: [...tags, ...source.tags],
       relevanceScore: score,
       isRelevant: true,
@@ -395,8 +400,7 @@ TRANSLATION RULES (strictly follow):
       status: score >= 50 ? 'pending_review' : 'rejected',
     }
   } catch (e) {
-    console.error('Sonnet translation failed:', e)
-    // Return without translations rather than dropping the article entirely
+    console.error('Translation step failed entirely:', e)
     return {
       sourceId: source.id,
       url: article.url,
