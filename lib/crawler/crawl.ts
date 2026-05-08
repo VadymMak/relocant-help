@@ -122,7 +122,7 @@ async function enrichWithFullPage(url: string): Promise<string> {
         .replace(/<[^>]+>/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
-        .slice(0, 8000)
+        .slice(0, 12000)
     }
 
     if (article?.description) return article.description
@@ -374,7 +374,7 @@ ${TRANSLATION_RULES}
   }
 
   try {
-    const content = article.content.slice(0, 8000)
+    const content = article.content.slice(0, 12000)
     const [uk, ru] = await Promise.all([
       callTranslation('Ukrainian', content),
       callTranslation('Russian', content),

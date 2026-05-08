@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { extract } from '@extractus/article-extractor'
 import { processWithClaude, type RawArticle } from '@/lib/crawler/crawl'
 import type { CrawlerSource } from '@/lib/crawler/sources'
 import { getPrisma } from '@/lib/db'
@@ -13,7 +14,7 @@ function extractText(html: string): string {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 8000)
+    .slice(0, 12000)
 }
 
 function detectLanguage(tld: string): string {
@@ -80,7 +81,30 @@ export async function POST(req: NextRequest) {
   }
 
   const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? parsedUrl.hostname
-  const content = extractText(html)
+
+  // Try article-extractor for cleaner content
+  let extractedContent = ''
+  try {
+    const article = await extract(url, {}, { signal: AbortSignal.timeout(15000) })
+    if (article?.content) {
+      extractedContent = article.content
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 12000)
+    } else if (article?.description) {
+      extractedContent = article.description.slice(0, 12000)
+    }
+  } catch (err) {
+    console.warn('[import-url] article-extractor failed:', err)
+  }
+
+  // Raw HTML fallback
+  const rawContent = extractText(html)
+
+  // Take the longer result
+  const content = extractedContent.length > rawContent.length ? extractedContent : rawContent
+  console.log(`[import-url] contentLength=${content.length} (extractor=${extractedContent.length}, raw=${rawContent.length})`)
 
   if (content.length < 50) {
     return NextResponse.json(
