@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getPrisma } from '@/lib/db'
 
-const BASE = 'https://relocant.help'
+const BASE = process.env.NEXT_PUBLIC_APP_URL || 'https://relocan.eu'
 const LOCALES = ['uk', 'ru', 'en']
 const STATIC_PATHS = ['', '/articles', '/about', '/contact', '/catalog']
 
