@@ -191,6 +191,19 @@ async function enrichWithFullPage(url: string, useJina = false): Promise<string>
   return ''
 }
 
+async function resolveGoogleNewsUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(5000),
+    })
+    return res.url || url
+  } catch {
+    return url
+  }
+}
+
 // ── Layer 3: Extract article links from a news list page ───
 export async function extractArticleLinks(
   source: CrawlerSource,
@@ -237,25 +250,49 @@ export async function extractArticleLinks(
     }
 
     if (!jinaOk) {
-      // Level 3: Google News RSS for domain
+      // Level 3: Google News RSS for domain — resolve redirects + enrich content
       try {
         const domain = new URL(source.url).hostname.replace(/^www\./, '')
         const gRssUrl = `https://news.google.com/rss/search?q=site:${domain}&hl=en&gl=EU&ceid=EU:en`
         const gRes = await fetch(gRssUrl, { signal: AbortSignal.timeout(10000) })
         if (gRes.ok) {
           const xml = await gRes.text()
-          const articles: RawArticle[] = []
+          const rawItems: { title: string; link: string; desc: string }[] = []
           for (const match of xml.matchAll(/<item[\s\S]*?<\/item>/g)) {
             const item = match[0]
             const title = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() ?? ''
             const link = item.match(/<link[^>]*>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? ''
             const desc = item.match(/<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/)?.[1]?.replace(/<[^>]+>/g, ' ').trim() ?? ''
-            if (title && link && !seenUrls.has(link)) {
-              articles.push({ sourceId: source.id, url: link, title, content: desc, language: source.language })
+            if (title && link && !seenUrls.has(link)) rawItems.push({ title, link, desc })
+          }
+
+          const articles: RawArticle[] = []
+          const BATCH_L3 = 5
+          for (let i = 0; i < rawItems.slice(0, 10).length; i += BATCH_L3) {
+            const chunk = rawItems.slice(i, i + BATCH_L3)
+            const results = await Promise.allSettled(
+              chunk.map(async item => {
+                const work = (async () => {
+                  const realUrl = await resolveGoogleNewsUrl(item.link)
+                  const fullContent = await enrichWithFullPage(realUrl, true)
+                  return {
+                    sourceId: source.id,
+                    url: realUrl,
+                    title: item.title,
+                    content: fullContent.length > 300 ? fullContent : item.desc,
+                    language: source.language,
+                  } as RawArticle
+                })()
+                const timeout = new Promise<null>(r => setTimeout(() => r(null), 8000))
+                return Promise.race([work, timeout])
+              })
+            )
+            for (const r of results) {
+              if (r.status === 'fulfilled' && r.value) articles.push(r.value)
             }
           }
-          console.log(`[L3] GNews RSS for ${domain}: ${articles.length} items`)
-          return articles.slice(0, 10)
+          console.log(`[L3] GNews RSS for ${domain}: ${articles.length} enriched items`)
+          return articles
         }
       } catch (err) {
         throw new Error(`L3 Google News RSS failed for ${source.id}: ${err}`)
