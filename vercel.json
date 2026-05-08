@@ -1,4 +1,9 @@
 {
   "regions": ["cdg1"],
-  "crons": []
+  "crons": [],
+  "functions": {
+    "app/api/crawler/run/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

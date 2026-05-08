@@ -818,7 +818,9 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
   // Skip newsapi-type sources — handled by Layer 2 above
   const scrapeableSources = sources.filter(s => s.type !== 'newsapi')
 
-  for (const source of scrapeableSources) {
+  async function processSource(source: CrawlerSource): Promise<{ p: number; r: number }> {
+    let sp = 0
+    let sr = 0
     try {
       let rawArticles: RawArticle[] = []
 
@@ -836,7 +838,6 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
 
       // ── Layer 4: Scrape + link extraction ─────────────────
       } else {
-        // Load previously seen URLs from CrawlerLog meta or existing articles
         const seenArticles = await getPrisma().crawledArticle.findMany({
           where: { sourceId: source.id },
           select: { url: true },
@@ -849,28 +850,21 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
 
       for (const raw of rawArticles.slice(0, 10)) {
         const existing = await getPrisma().crawledArticle.findFirst({
-          where: {
-            OR: [
-              { url: raw.url },
-              { originalTitle: raw.title },
-            ],
-          },
+          where: { OR: [{ url: raw.url }, { originalTitle: raw.title }] },
           select: { id: true },
         })
         if (existing) continue
 
-        // Enrich RSS items that only have a short description
         const enriched = source.rssUrl
           ? { ...raw, content: (await enrichWithFullPage(raw.url, source.useJina)) || raw.content }
           : raw
 
         const article = await processWithClaude(enriched, source)
-        processed++
+        sp++
 
         if (article && article.isRelevant) {
-          relevant++
+          sr++
 
-          // Run vector verification before saving (non-blocking — crawl continues on error)
           let verificationStatus = 'pending'
           let vectorCheckResult: object | undefined
           let extractedFactsData: object[] | undefined
@@ -918,7 +912,6 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
           })
         }
 
-        // Be polite to government servers
         await new Promise(r => setTimeout(r, 2000))
       }
 
@@ -927,7 +920,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
           sourceId: source.id,
           status: 'success',
           articlesFound: rawArticles.length,
-          articlesRelevant: relevant,
+          articlesRelevant: sr,
         },
       })
     } catch (err: unknown) {
@@ -942,6 +935,17 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
           articlesRelevant: 0,
         },
       })
+    }
+    return { p: sp, r: sr }
+  }
+
+  const BATCH_SIZE = 5
+  for (let i = 0; i < scrapeableSources.length; i += BATCH_SIZE) {
+    const batch = scrapeableSources.slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(batch.map(source => processSource(source)))
+    for (const res of results) {
+      processed += res.p
+      relevant += res.r
     }
   }
 
