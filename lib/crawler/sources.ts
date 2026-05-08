@@ -315,7 +315,7 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     country: 'Portugal',
     countryFlag: '🇵🇹',
     name: 'AIMA - Agência para a Integração, Migrações e Asilo',
-    url: 'https://aima.gov.pt/en',
+    url: 'https://aima.gov.pt/en/news',
     language: 'pt',
     targetLanguages: ['uk', 'ru'],
     tags: ['Portugal', 'residence', 'migration', 'asylum'],

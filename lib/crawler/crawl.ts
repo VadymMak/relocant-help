@@ -198,6 +198,7 @@ export async function extractArticleLinks(
 ): Promise<RawArticle[]> {
   // ── useJina path: fetch listing via Jina, parse markdown links ──
   if (source.useJina) {
+    let jinaOk = false
     try {
       const jinaRes = await fetch(`https://r.jina.ai/${source.url}`, {
         headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
@@ -206,28 +207,62 @@ export async function extractArticleLinks(
       if (!jinaRes.ok) throw new Error(`Jina HTTP ${jinaRes.status}`)
       const markdown = await jinaRes.text()
 
-      const origin = new URL(source.url).origin
-      const candidates = new Set<string>()
-      const mdLinkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g
-      let m: RegExpExecArray | null
-      while ((m = mdLinkPattern.exec(markdown)) !== null) {
-        const href = m[2]
-        if (href.includes(origin.replace(/^https?:\/\//, ''))) candidates.add(href)
-      }
+      const linkCount = (markdown.match(/\[.+?\]\(https?/g) || []).length
+      if (linkCount < 3 || markdown.length < 800) {
+        console.warn(`[JINA] poor content quality for ${source.id} (links=${linkCount}, len=${markdown.length}), falling to L3`)
+      } else {
+        jinaOk = true
+        const origin = new URL(source.url).origin
+        const candidates = new Set<string>()
+        const mdLinkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g
+        let m: RegExpExecArray | null
+        while ((m = mdLinkPattern.exec(markdown)) !== null) {
+          const href = m[2]
+          if (href.includes(origin.replace(/^https?:\/\//, ''))) candidates.add(href)
+        }
 
-      const newUrls = [...candidates].filter(u => !seenUrls.has(u)).slice(0, 15)
-      const articles: RawArticle[] = []
-      for (const articleUrl of newUrls) {
-        const content = await enrichWithFullPage(articleUrl, true)
-        if (!content || content.length < 100) continue
-        const title = content.split('\n')[0].trim().slice(0, 200) || articleUrl
-        articles.push({ sourceId: source.id, url: articleUrl, title, content, language: source.language })
-        await new Promise(r => setTimeout(r, 1500))
+        const newUrls = [...candidates].filter(u => !seenUrls.has(u)).slice(0, 15)
+        const articles: RawArticle[] = []
+        for (const articleUrl of newUrls) {
+          const content = await enrichWithFullPage(articleUrl, true)
+          if (!content || content.length < 100) continue
+          const title = content.split('\n')[0].trim().slice(0, 200) || articleUrl
+          articles.push({ sourceId: source.id, url: articleUrl, title, content, language: source.language })
+          await new Promise(r => setTimeout(r, 1500))
+        }
+        return articles
       }
-      return articles
     } catch (err) {
-      throw new Error(`Jina listing fetch failed for ${source.id}: ${err}`)
+      console.warn(`[JINA] fetch failed for ${source.id}: ${err}, falling to L3`)
     }
+
+    if (!jinaOk) {
+      // Level 3: Google News RSS for domain
+      try {
+        const domain = new URL(source.url).hostname.replace(/^www\./, '')
+        const gRssUrl = `https://news.google.com/rss/search?q=site:${domain}&hl=en&gl=EU&ceid=EU:en`
+        const gRes = await fetch(gRssUrl, { signal: AbortSignal.timeout(10000) })
+        if (gRes.ok) {
+          const xml = await gRes.text()
+          const articles: RawArticle[] = []
+          for (const match of xml.matchAll(/<item[\s\S]*?<\/item>/g)) {
+            const item = match[0]
+            const title = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() ?? ''
+            const link = item.match(/<link[^>]*>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? ''
+            const desc = item.match(/<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/)?.[1]?.replace(/<[^>]+>/g, ' ').trim() ?? ''
+            if (title && link && !seenUrls.has(link)) {
+              articles.push({ sourceId: source.id, url: link, title, content: desc, language: source.language })
+            }
+          }
+          console.log(`[L3] GNews RSS for ${domain}: ${articles.length} items`)
+          return articles.slice(0, 10)
+        }
+      } catch (err) {
+        throw new Error(`L3 Google News RSS failed for ${source.id}: ${err}`)
+      }
+    }
+
+    return []
   }
 
   // ── standard path ────────────────────────────────────────────
@@ -790,6 +825,14 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
       // ── Layer 3: RSS / Atom feeds ──────────────────────────
       if (source.rssUrl) {
         rawArticles = await fetchRSS(source.rssUrl)
+        const cutoffDate = new Date()
+        cutoffDate.setHours(cutoffDate.getHours() - source.checkIntervalHours)
+        const beforeFilter = rawArticles.length
+        rawArticles = rawArticles.filter(item => {
+          if (!item.publishedAt) return true
+          return new Date(item.publishedAt) > cutoffDate
+        })
+        console.log(`[RSS] ${source.id}: ${rawArticles.length}/${beforeFilter} items after date filter`)
 
       // ── Layer 4: Scrape + link extraction ─────────────────
       } else {
