@@ -63,19 +63,33 @@ export async function POST(req: NextRequest) {
   // Test connectivity + fetch HTML for name/RSS detection
   let html = ''
   let statusCode = 0
+  let usedJina = false
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'relocant.help/1.0 (crawler source check)' },
       signal: AbortSignal.timeout(12000),
     })
     statusCode = res.status
-    if (!res.ok) {
-      return NextResponse.json({ error: `URL returned HTTP ${res.status}` }, { status: 422 })
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
     html = await res.text()
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    return NextResponse.json({ error: `Cannot reach URL: ${message}` }, { status: 422 })
+  } catch (directErr) {
+    // Fallback: Jina AI Reader for geo-blocked sites
+    try {
+      const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
+        headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!jinaRes.ok) {
+        const message = directErr instanceof Error ? directErr.message : String(directErr)
+        return NextResponse.json({ error: `Cannot reach URL: ${message}` }, { status: 422 })
+      }
+      html = await jinaRes.text()
+      statusCode = 200
+      usedJina = true
+    } catch {
+      const message = directErr instanceof Error ? directErr.message : String(directErr)
+      return NextResponse.json({ error: `Cannot reach URL: ${message}` }, { status: 422 })
+    }
   }
 
   const detectedName = body.name?.trim() || extractTitle(html) || new URL(url).hostname
@@ -106,5 +120,6 @@ export async function POST(req: NextRequest) {
     hasRss,
     rssUrl: rssUrl ?? null,
     statusCode,
+    usedJina,
   })
 }

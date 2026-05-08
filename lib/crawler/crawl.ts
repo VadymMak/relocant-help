@@ -111,41 +111,83 @@ export async function fetchPage(url: string): Promise<RawArticle[]> {
   }]
 }
 
-// ── Step 2b: Extract full article content via Jina AI Reader (+ article-extractor fallback)
-async function enrichWithFullPage(url: string): Promise<string> {
-  try {
-    const jinaUrl = `https://r.jina.ai/${url}`
-    const res = await fetch(jinaUrl, {
-      headers: {
-        'Accept': 'text/plain',
-        'X-Return-Format': 'text',
-      },
-      signal: AbortSignal.timeout(15000),
-    })
-
-    if (!res.ok) throw new Error(`Jina: ${res.status}`)
-
-    const text = await res.text()
-
-    if (text && text.length > 200) {
-      return text.slice(0, 12000)
-    }
-
-    throw new Error('Too short')
-  } catch (err) {
-    console.error(`Jina failed for ${url}, trying extractor:`, err)
+// ── Step 2b: Extract full article content — 3-level fallback
+async function enrichWithFullPage(url: string, useJina = false): Promise<string> {
+  // Level 1: browser-like headers (skipped when useJina: true)
+  if (!useJina) {
     try {
-      const { extract } = await import('@extractus/article-extractor')
-      const article = await extract(url)
-      return (article?.content || article?.description || '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 12000)
-    } catch {
-      return ''
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+        },
+        signal: AbortSignal.timeout(15000),
+      })
+      if (res.ok) {
+        const html = await res.text()
+        const text = html
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+          .replace(/<header[\s\S]*?<\/header>/gi, '')
+          .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+        if (text.length > 200) {
+          console.log(`[enrich] L1 ${url} (${text.length}c)`)
+          return text.slice(0, 12000)
+        }
+      }
+    } catch (err) {
+      console.warn(`[enrich] L1 failed for ${url}:`, err)
     }
   }
+
+  // Level 2: Jina AI Reader
+  try {
+    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
+      headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (jinaRes.ok) {
+      const text = await jinaRes.text()
+      if (text.length > 200) {
+        console.log(`[enrich] L2 (Jina) ${url} (${text.length}c)`)
+        return text.slice(0, 12000)
+      }
+    }
+  } catch (err) {
+    console.warn(`[enrich] L2 (Jina) failed for ${url}:`, err)
+  }
+
+  // Level 3: Google News RSS — site:{domain} query
+  try {
+    const domain = new URL(url).hostname.replace(/^www\./, '')
+    const gRssUrl = `https://news.google.com/rss/search?q=site:${domain}&hl=en&gl=EU&ceid=EU:en`
+    const gRes = await fetch(gRssUrl, { signal: AbortSignal.timeout(10000) })
+    if (gRes.ok) {
+      const xml = await gRes.text()
+      const items: string[] = []
+      for (const match of xml.matchAll(/<item[\s\S]*?<\/item>/g)) {
+        const item = match[0]
+        const title = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() ?? ''
+        const desc = item.match(/<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/)?.[1]?.replace(/<[^>]+>/g, ' ').trim() ?? ''
+        if (title) items.push(`${title}\n${desc}`.trim())
+      }
+      if (items.length > 0) {
+        const text = items.join('\n\n')
+        console.log(`[enrich] L3 (GNews RSS) ${domain} (${items.length} items)`)
+        return text.slice(0, 12000)
+      }
+    }
+  } catch (err) {
+    console.warn(`[enrich] L3 (GNews RSS) failed for ${url}:`, err)
+  }
+
   return ''
 }
 
@@ -154,6 +196,41 @@ export async function extractArticleLinks(
   source: CrawlerSource,
   seenUrls: Set<string>
 ): Promise<RawArticle[]> {
+  // ── useJina path: fetch listing via Jina, parse markdown links ──
+  if (source.useJina) {
+    try {
+      const jinaRes = await fetch(`https://r.jina.ai/${source.url}`, {
+        headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!jinaRes.ok) throw new Error(`Jina HTTP ${jinaRes.status}`)
+      const markdown = await jinaRes.text()
+
+      const origin = new URL(source.url).origin
+      const candidates = new Set<string>()
+      const mdLinkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g
+      let m: RegExpExecArray | null
+      while ((m = mdLinkPattern.exec(markdown)) !== null) {
+        const href = m[2]
+        if (href.includes(origin.replace(/^https?:\/\//, ''))) candidates.add(href)
+      }
+
+      const newUrls = [...candidates].filter(u => !seenUrls.has(u)).slice(0, 15)
+      const articles: RawArticle[] = []
+      for (const articleUrl of newUrls) {
+        const content = await enrichWithFullPage(articleUrl, true)
+        if (!content || content.length < 100) continue
+        const title = content.split('\n')[0].trim().slice(0, 200) || articleUrl
+        articles.push({ sourceId: source.id, url: articleUrl, title, content, language: source.language })
+        await new Promise(r => setTimeout(r, 1500))
+      }
+      return articles
+    } catch (err) {
+      throw new Error(`Jina listing fetch failed for ${source.id}: ${err}`)
+    }
+  }
+
+  // ── standard path ────────────────────────────────────────────
   let html: string
   try {
     const res = await fetch(source.url, {
@@ -741,7 +818,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
 
         // Enrich RSS items that only have a short description
         const enriched = source.rssUrl
-          ? { ...raw, content: (await enrichWithFullPage(raw.url)) || raw.content }
+          ? { ...raw, content: (await enrichWithFullPage(raw.url, source.useJina)) || raw.content }
           : raw
 
         const article = await processWithClaude(enriched, source)

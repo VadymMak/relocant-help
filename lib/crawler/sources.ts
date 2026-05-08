@@ -12,6 +12,7 @@ export interface CrawlerSource {
   checkIntervalHours: number
   active: boolean
   type?: 'rss' | 'scrape' | 'newsapi'
+  useJina?: boolean
 }
 
 export const CRAWLER_SOURCES: CrawlerSource[] = [
@@ -202,7 +203,6 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
 
   // ── SPAIN ─────────────────────────────────────────────────
   {
-    // All inclusion.gob.es and extranjeros.inclusion.gob.es URLs return fetch failed (network-level block)
     id: 'es-migraciones',
     country: 'Spain',
     countryFlag: '🇪🇸',
@@ -212,13 +212,13 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     targetLanguages: ['uk', 'ru'],
     tags: ['residence', 'Spain', 'migration', 'foreigners'],
     checkIntervalHours: 48,
-    active: false,
+    active: true,
     type: 'scrape',
+    useJina: true,
   },
 
   // ── ITALY ─────────────────────────────────────────────────
   {
-    // interno.gov.it is the Ministry of Interior — HEAD 200, redirects to IT version (fine for scraping)
     id: 'it-interno',
     country: 'Italy',
     countryFlag: '🇮🇹',
@@ -230,6 +230,7 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     checkIntervalHours: 48,
     active: true,
     type: 'scrape',
+    useJina: true,
   },
 
   // ── ROMANIA ───────────────────────────────────────────────
@@ -310,7 +311,6 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
 
   // ── PORTUGAL ──────────────────────────────────────────────
   {
-    // All aima.gov.pt and sef.pt URLs return fetch failed (network-level block)
     id: 'pt-aima',
     country: 'Portugal',
     countryFlag: '🇵🇹',
@@ -320,8 +320,9 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     targetLanguages: ['uk', 'ru'],
     tags: ['Portugal', 'residence', 'migration', 'asylum'],
     checkIntervalHours: 48,
-    active: false,
+    active: true,
     type: 'scrape',
+    useJina: true,
   },
 
   // ── EU / INTERNATIONAL ────────────────────────────────────
