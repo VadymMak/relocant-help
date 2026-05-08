@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extract } from '@extractus/article-extractor'
 import { processWithClaude, type RawArticle } from '@/lib/crawler/crawl'
 import type { CrawlerSource } from '@/lib/crawler/sources'
 import { getPrisma } from '@/lib/db'
@@ -82,29 +81,38 @@ export async function POST(req: NextRequest) {
 
   const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? parsedUrl.hostname
 
-  // Try article-extractor for cleaner content
-  let extractedContent = ''
+  // Try Jina AI Reader for cleaner content
+  let jinaContent = ''
   try {
-    const article = await extract(url, {}, { signal: AbortSignal.timeout(15000) })
-    if (article?.content) {
-      extractedContent = article.content
+    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
+      headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!jinaRes.ok) throw new Error(`Jina: ${jinaRes.status}`)
+    const text = await jinaRes.text()
+    if (text.length > 200) jinaContent = text.slice(0, 12000)
+    else throw new Error('Too short')
+  } catch (err) {
+    console.warn('[import-url] Jina failed, trying article-extractor:', err)
+    try {
+      const { extract } = await import('@extractus/article-extractor')
+      const article = await extract(url)
+      jinaContent = (article?.content || article?.description || '')
         .replace(/<[^>]+>/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 12000)
-    } else if (article?.description) {
-      extractedContent = article.description.slice(0, 12000)
+    } catch (err2) {
+      console.warn('[import-url] article-extractor also failed:', err2)
     }
-  } catch (err) {
-    console.warn('[import-url] article-extractor failed:', err)
   }
 
   // Raw HTML fallback
   const rawContent = extractText(html)
 
   // Take the longer result
-  const content = extractedContent.length > rawContent.length ? extractedContent : rawContent
-  console.log(`[import-url] contentLength=${content.length} (extractor=${extractedContent.length}, raw=${rawContent.length})`)
+  const content = jinaContent.length > rawContent.length ? jinaContent : rawContent
+  console.log(`[import-url] contentLength=${content.length} (jina=${jinaContent.length}, raw=${rawContent.length})`)
 
   if (content.length < 50) {
     return NextResponse.json(

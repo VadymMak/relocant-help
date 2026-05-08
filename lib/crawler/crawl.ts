@@ -1,4 +1,3 @@
-import { extract } from '@extractus/article-extractor'
 import Anthropic from '@anthropic-ai/sdk'
 import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
 import { getSources } from '@/lib/db/sources-config'
@@ -112,22 +111,40 @@ export async function fetchPage(url: string): Promise<RawArticle[]> {
   }]
 }
 
-// ── Step 2b: Extract full article content via article-extractor
+// ── Step 2b: Extract full article content via Jina AI Reader (+ article-extractor fallback)
 async function enrichWithFullPage(url: string): Promise<string> {
   try {
-    const article = await extract(url, {}, { signal: AbortSignal.timeout(15000) })
+    const jinaUrl = `https://r.jina.ai/${url}`
+    const res = await fetch(jinaUrl, {
+      headers: {
+        'Accept': 'text/plain',
+        'X-Return-Format': 'text',
+      },
+      signal: AbortSignal.timeout(15000),
+    })
 
-    if (article?.content) {
-      return article.content
+    if (!res.ok) throw new Error(`Jina: ${res.status}`)
+
+    const text = await res.text()
+
+    if (text && text.length > 200) {
+      return text.slice(0, 12000)
+    }
+
+    throw new Error('Too short')
+  } catch (err) {
+    console.error(`Jina failed for ${url}, trying extractor:`, err)
+    try {
+      const { extract } = await import('@extractus/article-extractor')
+      const article = await extract(url)
+      return (article?.content || article?.description || '')
         .replace(/<[^>]+>/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 12000)
+    } catch {
+      return ''
     }
-
-    if (article?.description) return article.description
-  } catch (err) {
-    console.error(`[extract] Failed for ${url}:`, err)
   }
   return ''
 }
