@@ -2,10 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { RELEVANCE_KEYWORDS, CrawlerSource } from './sources'
 import { getSources } from '@/lib/db/sources-config'
 import { getPrisma } from '@/lib/db'
-import { fetchAllNewsArticles, mapNewsDataCountry } from './newsapi'
 import { fetchFromGoogleNews } from './googlenews'
-import { scrapeNewsPages } from './scraper'
-import { verifyArticle } from '@/lib/vector/verify'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -50,7 +47,6 @@ export async function fetchRSS(url: string): Promise<RawArticle[]> {
   const xml = await res.text()
   const items: RawArticle[] = []
 
-  // Handle both <item> (RSS) and <entry> (Atom)
   const rssMatches = xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/g)
   const atomMatches = xml.matchAll(/<entry[^>]*>([\s\S]*?)<\/entry>/g)
 
@@ -61,7 +57,6 @@ export async function fetchRSS(url: string): Promise<RawArticle[]> {
       item.match(/<title[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1] ??
       item.match(/<title[^>]*>([^<]+)<\/title>/)?.[1] ?? ''
 
-    // Atom uses <link href="..."/>, RSS uses <link>url</link>
     const link =
       item.match(/<link[^>]+href=["']([^"']+)["']/)?.[1] ??
       item.match(/<link[^>]*>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? ''
@@ -91,106 +86,7 @@ export async function fetchRSS(url: string): Promise<RawArticle[]> {
   return items
 }
 
-// ── Step 2: Fetch HTML page and extract text ───────────────
-export async function fetchPage(url: string): Promise<RawArticle[]> {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'relocant.help/1.0' },
-    next: { revalidate: 0 },
-  })
-  if (!res.ok) throw new Error(`Page fetch failed: ${res.status} ${url}`)
-  const html = await res.text()
-
-  const text = extractText(html)
-
-  return [{
-    sourceId: '',
-    url,
-    title: html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ?? url,
-    content: text,
-    language: 'unknown',
-  }]
-}
-
-// ── Step 2b: Extract full article content — 3-level fallback
-async function enrichWithFullPage(url: string, useJina = false): Promise<string> {
-  // Level 1: browser-like headers (skipped when useJina: true)
-  if (!useJina) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Cache-Control': 'no-cache',
-        },
-        signal: AbortSignal.timeout(15000),
-      })
-      if (res.ok) {
-        const html = await res.text()
-        const text = html
-          .replace(/<script[\s\S]*?<\/script>/gi, '')
-          .replace(/<style[\s\S]*?<\/style>/gi, '')
-          .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-          .replace(/<header[\s\S]*?<\/header>/gi, '')
-          .replace(/<footer[\s\S]*?<\/footer>/gi, '')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-        if (text.length > 200) {
-          console.log(`[enrich] L1 ${url} (${text.length}c)`)
-          return text.slice(0, 12000)
-        }
-      }
-    } catch (err) {
-      console.warn(`[enrich] L1 failed for ${url}:`, err)
-    }
-  }
-
-  // Level 2: Jina AI Reader
-  try {
-    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
-      headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
-      signal: AbortSignal.timeout(15000),
-    })
-    if (jinaRes.ok) {
-      const text = await jinaRes.text()
-      if (text.length > 200) {
-        console.log(`[enrich] L2 (Jina) ${url} (${text.length}c)`)
-        return text.slice(0, 12000)
-      }
-    }
-  } catch (err) {
-    console.warn(`[enrich] L2 (Jina) failed for ${url}:`, err)
-  }
-
-  // Level 3: Google News RSS — site:{domain} query
-  try {
-    const domain = new URL(url).hostname.replace(/^www\./, '')
-    const gRssUrl = `https://news.google.com/rss/search?q=site:${domain}&hl=en&gl=EU&ceid=EU:en`
-    const gRes = await fetch(gRssUrl, { signal: AbortSignal.timeout(10000) })
-    if (gRes.ok) {
-      const xml = await gRes.text()
-      const items: string[] = []
-      for (const match of xml.matchAll(/<item[\s\S]*?<\/item>/g)) {
-        const item = match[0]
-        const title = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() ?? ''
-        const desc = item.match(/<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/)?.[1]?.replace(/<[^>]+>/g, ' ').trim() ?? ''
-        if (title) items.push(`${title}\n${desc}`.trim())
-      }
-      if (items.length > 0) {
-        const text = items.join('\n\n')
-        console.log(`[enrich] L3 (GNews RSS) ${domain} (${items.length} items)`)
-        return text.slice(0, 12000)
-      }
-    }
-  } catch (err) {
-    console.warn(`[enrich] L3 (GNews RSS) failed for ${url}:`, err)
-  }
-
-  return ''
-}
-
+// ── Resolve Google News redirect to real article URL ──────
 async function resolveGoogleNewsUrl(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
@@ -204,190 +100,19 @@ async function resolveGoogleNewsUrl(url: string): Promise<string> {
   }
 }
 
-// ── Layer 3: Extract article links from a news list page ───
-export async function extractArticleLinks(
-  source: CrawlerSource,
-  seenUrls: Set<string>
-): Promise<RawArticle[]> {
-  // ── useJina path: fetch listing via Jina, parse markdown links ──
-  if (source.useJina) {
-    let jinaOk = false
-    try {
-      const jinaRes = await fetch(`https://r.jina.ai/${source.url}`, {
-        headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
-        signal: AbortSignal.timeout(15000),
-      })
-      if (!jinaRes.ok) throw new Error(`Jina HTTP ${jinaRes.status}`)
-      const markdown = await jinaRes.text()
-
-      const linkCount = (markdown.match(/\[.+?\]\(https?/g) || []).length
-      if (linkCount < 3 || markdown.length < 800) {
-        console.warn(`[JINA] poor content quality for ${source.id} (links=${linkCount}, len=${markdown.length}), falling to L3`)
-      } else {
-        jinaOk = true
-        const origin = new URL(source.url).origin
-        const candidates = new Set<string>()
-        const mdLinkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g
-        let m: RegExpExecArray | null
-        while ((m = mdLinkPattern.exec(markdown)) !== null) {
-          const href = m[2]
-          if (href.includes(origin.replace(/^https?:\/\//, ''))) candidates.add(href)
-        }
-
-        const newUrls = [...candidates].filter(u => !seenUrls.has(u)).slice(0, 15)
-        const articles: RawArticle[] = []
-        for (const articleUrl of newUrls) {
-          const content = await enrichWithFullPage(articleUrl, true)
-          if (!content || content.length < 100) continue
-          const title = content.split('\n')[0].trim().slice(0, 200) || articleUrl
-          articles.push({ sourceId: source.id, url: articleUrl, title, content, language: source.language })
-          await new Promise(r => setTimeout(r, 1500))
-        }
-        return articles
-      }
-    } catch (err) {
-      console.warn(`[JINA] fetch failed for ${source.id}: ${err}, falling to L3`)
-    }
-
-    if (!jinaOk) {
-      // Level 3: Google News RSS for domain — resolve redirects + enrich content
-      try {
-        const domain = new URL(source.url).hostname.replace(/^www\./, '')
-        const gRssUrl = `https://news.google.com/rss/search?q=site:${domain}&hl=en&gl=EU&ceid=EU:en`
-        const gRes = await fetch(gRssUrl, { signal: AbortSignal.timeout(10000) })
-        if (gRes.ok) {
-          const xml = await gRes.text()
-          const rawItems: { title: string; link: string; desc: string }[] = []
-          for (const match of xml.matchAll(/<item[\s\S]*?<\/item>/g)) {
-            const item = match[0]
-            const title = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() ?? ''
-            const link = item.match(/<link[^>]*>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? ''
-            const desc = item.match(/<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/)?.[1]?.replace(/<[^>]+>/g, ' ').trim() ?? ''
-            if (title && link && !seenUrls.has(link) && !link.includes('news.google.com') && !link.includes('google.com/search')) rawItems.push({ title, link, desc })
-          }
-
-          const articles: RawArticle[] = []
-          const BATCH_L3 = 5
-          for (let i = 0; i < rawItems.slice(0, 10).length; i += BATCH_L3) {
-            const chunk = rawItems.slice(i, i + BATCH_L3)
-            const results = await Promise.allSettled(
-              chunk.map(async item => {
-                const work = (async () => {
-                  const realUrl = await resolveGoogleNewsUrl(item.link)
-                  if (!realUrl.startsWith('https://') || realUrl.includes('google.com') || realUrl.includes('accounts.google')) {
-                    console.warn(`[L3] Skipped invalid resolved URL: ${realUrl}`)
-                    return null
-                  }
-                  const fullContent = await enrichWithFullPage(realUrl, true)
-                  return {
-                    sourceId: source.id,
-                    url: realUrl,
-                    title: item.title,
-                    content: fullContent.length > 300 ? fullContent : item.desc,
-                    language: source.language,
-                  } as RawArticle
-                })()
-                const timeout = new Promise<null>(r => setTimeout(() => r(null), 8000))
-                return Promise.race([work, timeout])
-              })
-            )
-            for (const r of results) {
-              if (r.status === 'fulfilled' && r.value) articles.push(r.value)
-            }
-          }
-          console.log(`[L3] GNews RSS for ${domain}: ${articles.length} enriched items`)
-          return articles
-        }
-      } catch (err) {
-        throw new Error(`L3 Google News RSS failed for ${source.id}: ${err}`)
-      }
-    }
-
-    return []
-  }
-
-  // ── standard path ────────────────────────────────────────────
-  let html: string
+// ── Fetch full article text via Jina AI Reader ────────────
+async function fetchViaJina(url: string): Promise<string> {
   try {
-    const res = await fetch(source.url, {
-      headers: { 'User-Agent': 'relocant.help/1.0' },
-      next: { revalidate: 0 },
-      signal: AbortSignal.timeout(15000),
+    const res = await fetch(`https://r.jina.ai/${url}`, {
+      headers: { 'Accept': 'text/plain' },
+      signal: AbortSignal.timeout(10000),
     })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    html = await res.text()
-  } catch (err) {
-    throw new Error(`Page fetch failed: ${err}`)
+    if (!res.ok) return ''
+    const text = await res.text()
+    return text.slice(0, 5000)
+  } catch {
+    return ''
   }
-
-  // Extract base origin for relative links
-  const origin = new URL(source.url).origin
-
-  // Find all hrefs that look like article/news links
-  const hrefPattern = /href=["']([^"']+)["']/g
-  const candidates = new Set<string>()
-  let m: RegExpExecArray | null
-
-  while ((m = hrefPattern.exec(html)) !== null) {
-    const href = m[1]
-    // Skip anchors, javascript, mailto, assets
-    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue
-    if (/\.(css|js|png|jpg|gif|svg|ico|woff|pdf)(\?|$)/i.test(href)) continue
-
-    // Only keep links that contain article-like path segments
-    const articlePattern = /\/(news|article|aktualit|sprav|meldung|press|novinky|aktualn|media|clanek|info|post|blog)\//i
-    if (!articlePattern.test(href)) continue
-
-    const absolute = href.startsWith('http') ? href : `${origin}${href.startsWith('/') ? '' : '/'}${href}`
-    candidates.add(absolute)
-  }
-
-  // Filter to only URLs not seen before
-  const newUrls = [...candidates].filter(u => !seenUrls.has(u)).slice(0, 15)
-
-  const articles: RawArticle[] = []
-  for (const url of newUrls) {
-    try {
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'relocant.help/1.0' },
-        next: { revalidate: 0 },
-        signal: AbortSignal.timeout(10000),
-      })
-      if (!res.ok) continue
-      const pageHtml = await res.text()
-      const title = pageHtml.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? url
-      const content = extractText(pageHtml)
-      if (content.length < 100) continue
-
-      articles.push({
-        sourceId: source.id,
-        url,
-        title,
-        content,
-        language: source.language,
-      })
-
-      // Polite delay between article fetches
-      await new Promise(r => setTimeout(r, 1500))
-    } catch {
-      // Skip unreachable article pages
-    }
-  }
-
-  return articles
-}
-
-function extractText(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-    .replace(/<header[\s\S]*?<\/header>/gi, '')
-    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 8000)
 }
 
 // ── Country detection from URL (first-pass before Claude) ─────
@@ -606,144 +331,69 @@ ${TRANSLATION_RULES}
   }
 }
 
-// ── Step 4: Main crawl runner ──────────────────────────────
+// ── Main crawl runner ──────────────────────────────────────
 export async function runCrawler(sourceIds?: string[]): Promise<{
   processed: number
   relevant: number
   errors: string[]
 }> {
-  const allSources = await getSources()
-  const sources = sourceIds
-    ? allSources.filter(s => sourceIds.includes(s.id) && s.active)
-    : allSources.filter(s => s.active)
-
   let processed = 0
   let relevant = 0
   const errors: string[] = []
 
-  // ── Layer 0: Direct website scraping ─────────────────────────
-  {
-    let sc_found = 0
-    let sc_relevant = 0
-    try {
-      const scrapedArticles = await scrapeNewsPages()
-      sc_found = scrapedArticles.length
-
-      for (const raw of scrapedArticles) {
-        const existing = await getPrisma().crawledArticle.findFirst({
-          where: {
-            OR: [
-              { url: raw.url },
-              { originalTitle: raw.title },
-            ],
-          },
-          select: { id: true },
-        })
-        if (existing) continue
-
-        const content = await enrichWithFullPage(raw.url)
-        if (content.length < 100) continue
-        const enriched = { ...raw, content }
-
-        const scrapeSource: CrawlerSource = {
-          id: raw.sourceId,
-          country: 'European Union',
-          countryFlag: '🌍',
-          name: raw.sourceId.replace(/-/g, ' '),
-          url: raw.url,
-          language: 'en',
-          targetLanguages: ['uk', 'ru'],
-          tags: ['migration', 'Ukraine', 'Europe'],
-          checkIntervalHours: 12,
-          active: true,
-        }
-
-        const result = await processWithClaude(enriched, scrapeSource)
-        processed++
-
-        if (result && result.isRelevant) {
-          relevant++
-          sc_relevant++
-          console.log(`[Scraper] Relevant: "${result.originalTitle}" → ${result.country} (score: ${result.relevanceScore})`)
-          await getPrisma().crawledArticle.create({
-            data: {
-              sourceId: result.sourceId,
-              url: result.url,
-              originalTitle: result.originalTitle,
-              originalContent: result.originalContent?.slice(0, 10000),
-              originalLanguage: 'en',
-              titleUk: result.titleUk,
-              titleRu: result.titleRu,
-              summaryUk: result.summaryUk,
-              summaryRu: result.summaryRu,
-              fullTextUk: result.fullTextUk,
-              fullTextRu: result.fullTextRu,
-              tags: result.tags,
-              relevanceScore: result.relevanceScore,
-              country: result.country,
-              status: result.status,
-              publishedAt: new Date(),
-            },
-          })
-        }
-
-        await new Promise(r => setTimeout(r, 2000))
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      errors.push(`scraper: ${message}`)
-    }
-
-    await getPrisma().crawlerLog.create({
-      data: {
-        sourceId: 'scraper-layer0',
-        status: 'success',
-        articlesFound: sc_found,
-        articlesRelevant: sc_relevant,
-      },
-    })
-  }
-
-  // ── Layer 1: Google News RSS (free, no API key) ──────────────
+  // ── Layer 1+2: Google News RSS → resolve real URLs → Jina ──
   {
     let gn_found = 0
     let gn_relevant = 0
     try {
-      const googleArticles = await fetchFromGoogleNews()
-      gn_found = googleArticles.length
+      const rawArticles = await fetchFromGoogleNews()
 
-      for (const raw of googleArticles.slice(0, 40)) {
+      // Resolve all Google News redirects + fetch Jina content in parallel
+      const settledResults = await Promise.allSettled(
+        rawArticles.map(async (article): Promise<RawArticle | null> => {
+          const realUrl = await resolveGoogleNewsUrl(article.url)
+          if (realUrl.includes('google.com')) return null
+          const fullText = await fetchViaJina(realUrl)
+          return {
+            ...article,
+            url: realUrl,
+            content: fullText.length > 300 ? fullText : article.content,
+          }
+        })
+      )
+
+      const enriched: RawArticle[] = []
+      for (const r of settledResults) {
+        if (r.status === 'fulfilled' && r.value !== null) enriched.push(r.value)
+      }
+      gn_found = enriched.length
+      console.log(`[GoogleNews] ${gn_found} articles enriched (resolved + Jina)`)
+
+      // ── Layer 3: Claude filter + translate ──────────────────
+      const gnSource: CrawlerSource = {
+        id: 'googlenews',
+        country: 'European Union',
+        countryFlag: '🌍',
+        name: 'Google News',
+        url: 'https://news.google.com',
+        language: 'en',
+        targetLanguages: ['uk', 'ru'],
+        tags: ['migration', 'Ukraine', 'Europe'],
+        checkIntervalHours: 6,
+        active: true,
+      }
+
+      for (const article of enriched) {
         const existing = await getPrisma().crawledArticle.findFirst({
-          where: {
-            OR: [
-              { url: raw.url },
-              { originalTitle: raw.title },
-            ],
-          },
+          where: { OR: [{ url: article.url }, { originalTitle: article.title }] },
           select: { id: true },
         })
         if (existing) continue
 
-        const fetchedContent = await enrichWithFullPage(raw.url)
-        const enriched = { ...raw, content: fetchedContent || raw.content }
-
-        const googleSource: CrawlerSource = {
-          id: 'googlenews',
-          country: 'European Union',
-          countryFlag: '🌍',
-          name: 'Google News',
-          url: raw.url,
-          language: 'en',
-          targetLanguages: ['uk', 'ru'],
-          tags: ['migration', 'Ukraine', 'Europe'],
-          checkIntervalHours: 6,
-          active: true,
-        }
-
-        const result = await processWithClaude(enriched, googleSource)
+        const result = await processWithClaude(article, gnSource)
         processed++
 
-        if (result && result.isRelevant) {
+        if (result?.isRelevant) {
           relevant++
           gn_relevant++
           console.log(`[GoogleNews] Relevant: "${result.originalTitle}" → ${result.country} (score: ${result.relevanceScore})`)
@@ -764,12 +414,12 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
               relevanceScore: result.relevanceScore,
               country: result.country,
               status: result.status,
-              publishedAt: new Date(),
+              publishedAt: result.publishedAt ? new Date(result.publishedAt) : new Date(),
             },
           })
         }
 
-        await new Promise(r => setTimeout(r, 2000))
+        await new Promise(r => setTimeout(r, 1000))
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -786,55 +436,47 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
     })
   }
 
-  // ── Layer 2: NewsData.io + GNews APIs ────────────────────────
-  if (process.env.NEWSDATA_API_KEY || process.env.GNEWS_API_KEY) {
-    let nd_found = 0
-    let nd_relevant = 0
-    try {
-      const newsArticles = await fetchAllNewsArticles()
-      nd_found = newsArticles.length
+  // ── RSS sources: fetchRSS → Jina → Claude ─────────────────
+  const allSources = await getSources()
+  const rssSources = (sourceIds
+    ? allSources.filter(s => sourceIds.includes(s.id) && s.active)
+    : allSources.filter(s => s.active)
+  ).filter(s => s.rssUrl)
 
-      for (const article of newsArticles) {
+  for (const source of rssSources) {
+    let rs_found = 0
+    let rs_relevant = 0
+    try {
+      let rawArticles = await fetchRSS(source.rssUrl!)
+      const cutoff = new Date()
+      cutoff.setHours(cutoff.getHours() - source.checkIntervalHours)
+      const beforeFilter = rawArticles.length
+      rawArticles = rawArticles.filter(a => !a.publishedAt || new Date(a.publishedAt) > cutoff)
+      console.log(`[RSS] ${source.id}: ${rawArticles.length}/${beforeFilter} items after date filter`)
+      rs_found = rawArticles.length
+
+      for (const raw of rawArticles.slice(0, 10)) {
         const existing = await getPrisma().crawledArticle.findFirst({
-          where: {
-            OR: [
-              { url: article.link },
-              { originalTitle: article.title },
-            ],
-          },
+          where: { OR: [{ url: raw.url }, { originalTitle: raw.title }] },
           select: { id: true },
         })
         if (existing) continue
 
-        const raw: RawArticle = {
-          sourceId: `newsdata-${article.source_id}`,
-          url: article.link,
-          title: article.title,
-          content: article.content || article.description || article.title,
-          publishedAt: article.pubDate,
-          language: article.language || 'en',
+        const fullText = await fetchViaJina(raw.url)
+        const enriched: RawArticle = {
+          ...raw,
+          sourceId: source.id,
+          language: source.language,
+          content: fullText.length > 300 ? fullText : raw.content,
         }
 
-        const newsSource: CrawlerSource = {
-          id: `newsdata-${article.source_id}`,
-          country: mapNewsDataCountry(article.country),
-          countryFlag: '🌍',
-          name: article.source_name ?? 'NewsData.io',
-          url: article.link,
-          language: article.language || 'en',
-          targetLanguages: ['uk', 'ru'],
-          tags: article.keywords ?? ['migration'],
-          checkIntervalHours: 24,
-          active: true,
-        }
-
-        const result = await processWithClaude(raw, newsSource)
+        const result = await processWithClaude(enriched, source)
         processed++
 
-        if (result && result.isRelevant) {
+        if (result?.isRelevant) {
           relevant++
-          nd_relevant++
-          console.log(`[NewsData] Relevant: "${result.originalTitle}" → ${result.country} (score: ${result.relevanceScore})`)
+          rs_relevant++
+          console.log(`[RSS:${source.id}] Relevant: "${result.originalTitle}" → ${result.country} (score: ${result.relevanceScore})`)
           await getPrisma().crawledArticle.create({
             data: {
               sourceId: result.sourceId,
@@ -857,156 +499,21 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
           })
         }
 
-        await new Promise(r => setTimeout(r, 2000))
+        await new Promise(r => setTimeout(r, 1000))
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      errors.push(`newsdata: ${message}`)
+      errors.push(`${source.id}: ${message}`)
     }
 
     await getPrisma().crawlerLog.create({
       data: {
-        sourceId: 'newsdata-layer2',
-        status: 'success',
-        articlesFound: nd_found,
-        articlesRelevant: nd_relevant,
+        sourceId: source.id,
+        status: errors.some(e => e.startsWith(source.id)) ? 'error' : 'success',
+        articlesFound: rs_found,
+        articlesRelevant: rs_relevant,
       },
     })
-  }
-
-  // ── Layer 3 + 4: RSS feeds and scraping ───────────────────
-  // Skip newsapi-type sources — handled by Layer 2 above
-  const scrapeableSources = sources.filter(s => s.type !== 'newsapi')
-
-  async function processSource(source: CrawlerSource): Promise<{ p: number; r: number }> {
-    let sp = 0
-    let sr = 0
-    try {
-      let rawArticles: RawArticle[] = []
-
-      // ── Layer 3: RSS / Atom feeds ──────────────────────────
-      if (source.rssUrl) {
-        rawArticles = await fetchRSS(source.rssUrl)
-        const cutoffDate = new Date()
-        cutoffDate.setHours(cutoffDate.getHours() - source.checkIntervalHours)
-        const beforeFilter = rawArticles.length
-        rawArticles = rawArticles.filter(item => {
-          if (!item.publishedAt) return true
-          return new Date(item.publishedAt) > cutoffDate
-        })
-        console.log(`[RSS] ${source.id}: ${rawArticles.length}/${beforeFilter} items after date filter`)
-
-      // ── Layer 4: Scrape + link extraction ─────────────────
-      } else {
-        const seenArticles = await getPrisma().crawledArticle.findMany({
-          where: { sourceId: source.id },
-          select: { url: true },
-        })
-        const seenUrls = new Set(seenArticles.map(a => a.url))
-        rawArticles = await extractArticleLinks(source, seenUrls)
-      }
-
-      rawArticles = rawArticles.map(a => ({ ...a, sourceId: source.id, language: source.language }))
-
-      for (const raw of rawArticles.slice(0, 10)) {
-        const existing = await getPrisma().crawledArticle.findFirst({
-          where: { OR: [{ url: raw.url }, { originalTitle: raw.title }] },
-          select: { id: true },
-        })
-        if (existing) continue
-
-        const enriched = source.rssUrl
-          ? { ...raw, content: (await enrichWithFullPage(raw.url, source.useJina)) || raw.content }
-          : raw
-
-        const article = await processWithClaude(enriched, source)
-        sp++
-
-        if (article && article.isRelevant) {
-          sr++
-
-          let verificationStatus = 'pending'
-          let vectorCheckResult: object | undefined
-          let extractedFactsData: object[] | undefined
-
-          try {
-            const verification = await verifyArticle({
-              titleUk: article.titleUk,
-              summaryUk: article.summaryUk,
-              fullTextUk: article.fullTextUk,
-              originalContent: article.originalContent,
-              country: article.country,
-            })
-            verificationStatus =
-              verification.recommendation === 'publish' ? 'verified'
-              : verification.recommendation === 'reject' ? 'rejected_duplicate'
-              : 'review_needed'
-            vectorCheckResult = verification as object
-            extractedFactsData = verification.extractedFacts as object[]
-          } catch (e) {
-            console.error('[verify] verifyArticle failed:', e)
-          }
-
-          await getPrisma().crawledArticle.create({
-            data: {
-              sourceId: article.sourceId,
-              url: article.url,
-              originalTitle: article.originalTitle,
-              originalContent: article.originalContent.slice(0, 10000),
-              originalLanguage: article.originalLanguage,
-              titleUk: article.titleUk,
-              titleRu: article.titleRu,
-              summaryUk: article.summaryUk,
-              summaryRu: article.summaryRu,
-              fullTextUk: article.fullTextUk,
-              fullTextRu: article.fullTextRu,
-              tags: article.tags,
-              relevanceScore: article.relevanceScore,
-              country: article.country,
-              status: article.status,
-              verificationStatus,
-              vectorCheckResult,
-              extractedFacts: extractedFactsData,
-              publishedAt: article.publishedAt ? new Date(article.publishedAt) : new Date(),
-            },
-          })
-        }
-
-        await new Promise(r => setTimeout(r, 2000))
-      }
-
-      await getPrisma().crawlerLog.create({
-        data: {
-          sourceId: source.id,
-          status: 'success',
-          articlesFound: rawArticles.length,
-          articlesRelevant: sr,
-        },
-      })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      errors.push(`${source.id}: ${message}`)
-      await getPrisma().crawlerLog.create({
-        data: {
-          sourceId: source.id,
-          status: 'error',
-          error: message,
-          articlesFound: 0,
-          articlesRelevant: 0,
-        },
-      })
-    }
-    return { p: sp, r: sr }
-  }
-
-  const BATCH_SIZE = 5
-  for (let i = 0; i < scrapeableSources.length; i += BATCH_SIZE) {
-    const batch = scrapeableSources.slice(i, i + BATCH_SIZE)
-    const results = await Promise.all(batch.map(source => processSource(source)))
-    for (const res of results) {
-      processed += res.p
-      relevant += res.r
-    }
   }
 
   return { processed, relevant, errors }

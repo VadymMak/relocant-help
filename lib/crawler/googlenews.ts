@@ -27,9 +27,23 @@ const GOOGLE_NEWS_QUERIES = [
   // Bulgaria
   'украинци България 2026',
   'Ukrainian refugees Bulgaria 2026',
+  'България украинци временна закрила 2026',
+  // Slovakia
+  'Slovensko Ukrajinci 2026 pobyt',
+  'Slovakia Ukraine temporary protection 2026',
+  // Czech Republic
+  'Česká republika Ukrajinci dočasná ochrana 2026',
+  'Czech Republic Ukraine residence 2026',
+  // Portugal
+  'Portugal ucranianos proteção temporária 2026',
+  'Ukrainian Portugal AIMA 2026',
+  // Turkey
+  'Türkiye Ukrayna geçici koruma 2026',
   // General EU
   'temporary protection Ukraine EU extension 2026',
   'Ukrainian migrants Europe rights 2026',
+  'temporary protection directive Ukraine 2026',
+  'EU migration policy Ukraine extension 2026',
 ]
 
 export async function fetchFromGoogleNews(): Promise<RawArticle[]> {
