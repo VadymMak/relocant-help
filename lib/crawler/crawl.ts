@@ -263,7 +263,7 @@ export async function extractArticleLinks(
             const title = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.replace(/<[^>]+>/g, '').trim() ?? ''
             const link = item.match(/<link[^>]*>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? ''
             const desc = item.match(/<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/)?.[1]?.replace(/<[^>]+>/g, ' ').trim() ?? ''
-            if (title && link && !seenUrls.has(link)) rawItems.push({ title, link, desc })
+            if (title && link && !seenUrls.has(link) && !link.includes('news.google.com') && !link.includes('google.com/search')) rawItems.push({ title, link, desc })
           }
 
           const articles: RawArticle[] = []
@@ -274,6 +274,10 @@ export async function extractArticleLinks(
               chunk.map(async item => {
                 const work = (async () => {
                   const realUrl = await resolveGoogleNewsUrl(item.link)
+                  if (!realUrl.startsWith('https://') || realUrl.includes('google.com') || realUrl.includes('accounts.google')) {
+                    console.warn(`[L3] Skipped invalid resolved URL: ${realUrl}`)
+                    return null
+                  }
                   const fullContent = await enrichWithFullPage(realUrl, true)
                   return {
                     sourceId: source.id,
@@ -426,6 +430,25 @@ export async function processWithClaude(
   const keywordsStr = RELEVANCE_KEYWORDS.join(', ')
   const urlCountry = detectCountryFromUrl(article.url)
   const countryHint = urlCountry ?? source.country
+
+  // Auto-reject Google navigation pages without API call
+  const GOOGLE_NAV_MARKERS = ['Google News', 'Google Новини', 'Головна сторінка']
+  if (GOOGLE_NAV_MARKERS.some(marker => article.title.includes(marker))) {
+    console.log(`[filter] Skipped Google nav page: "${article.title}"`)
+    return {
+      sourceId: source.id,
+      url: article.url,
+      originalTitle: article.title,
+      originalContent: article.content,
+      originalLanguage: source.language,
+      tags: source.tags,
+      relevanceScore: 0,
+      isRelevant: false,
+      country: source.country,
+      publishedAt: article.publishedAt,
+      status: 'rejected',
+    }
+  }
 
   // ── Call 1: Haiku — filter only (cheap, runs for every article) ──
   const filterPrompt = `You are a filter for a news aggregator for Ukrainian/Russian-speaking relocants in Europe.
