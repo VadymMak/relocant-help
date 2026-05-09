@@ -100,8 +100,72 @@ async function resolveGoogleNewsUrl(url: string): Promise<string> {
   }
 }
 
-// ── Fetch full article text via Jina AI Reader ────────────
-async function fetchViaJina(url: string): Promise<string> {
+// ── Level 0: Python scraper service (best for geo-blocked gov sites) ──
+async function fetchViaPythonScraper(url: string): Promise<string> {
+  const serviceUrl = process.env.SCRAPER_SERVICE_URL
+  const secret = process.env.SCRAPER_SECRET
+  if (!serviceUrl || !secret) return ''
+  try {
+    const res = await fetch(`${serviceUrl}/scraper/scrape`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-scraper-secret': secret,
+      },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(20000),
+    })
+    if (!res.ok) return ''
+    const data = await res.json() as { success: boolean; content?: string }
+    if (!data.success || !data.content) return ''
+    console.log(`[PYTHON-SCRAPER] ${url}: ${data.content.length} chars`)
+    return data.content
+  } catch (e) {
+    console.warn(`[PYTHON-SCRAPER] failed for ${url}:`, e)
+    return ''
+  }
+}
+
+// ── Enrich article content — 3-level fallback ─────────────
+async function enrichContent(url: string): Promise<string> {
+  // Level 0: Python scraper
+  if (process.env.SCRAPER_SERVICE_URL) {
+    const content = await fetchViaPythonScraper(url)
+    if (content.length > 300) return content
+  }
+
+  // Level 1: browser-like headers
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+      },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (res.ok) {
+      const html = await res.text()
+      const text = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+        .replace(/<header[\s\S]*?<\/header>/gi, '')
+        .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (text.length > 300) {
+        console.log(`[enrich] L1 ${url} (${text.length}c)`)
+        return text.slice(0, 5000)
+      }
+    }
+  } catch {
+    // fall through to Jina
+  }
+
+  // Level 2: Jina AI Reader
   try {
     const res = await fetch(`https://r.jina.ai/${url}`, {
       headers: { 'Accept': 'text/plain' },
@@ -348,12 +412,12 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
     try {
       const rawArticles = await fetchFromGoogleNews()
 
-      // Resolve all Google News redirects + fetch Jina content in parallel
+      // Resolve all Google News redirects + enrich content in parallel
       const settledResults = await Promise.allSettled(
         rawArticles.map(async (article): Promise<RawArticle | null> => {
           const realUrl = await resolveGoogleNewsUrl(article.url)
           if (realUrl.includes('google.com')) return null
-          const fullText = await fetchViaJina(realUrl)
+          const fullText = await enrichContent(realUrl)
           return {
             ...article,
             url: realUrl,
@@ -462,7 +526,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
         })
         if (existing) continue
 
-        const fullText = await fetchViaJina(raw.url)
+        const fullText = await enrichContent(raw.url)
         const enriched: RawArticle = {
           ...raw,
           sourceId: source.id,

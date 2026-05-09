@@ -76,6 +76,95 @@ export const CRAWLER_SOURCES: CrawlerSource[] = [
     active: true,
     type: 'rss',
   },
+  // ── SPAIN ─────────────────────────────────────────────────
+  {
+    id: 'es-migraciones',
+    country: 'Spain',
+    countryFlag: '🇪🇸',
+    name: 'Ministerio de Inclusión - Migraciones',
+    url: 'https://www.inclusion.gob.es/en/web/migraciones/vivir-en-espana',
+    language: 'es',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['residence', 'Spain', 'migration', 'foreigners'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── ITALY ─────────────────────────────────────────────────
+  {
+    id: 'it-interno',
+    country: 'Italy',
+    countryFlag: '🇮🇹',
+    name: 'Ministero dell\'Interno — Immigrazione e Asilo',
+    url: 'https://www.interno.gov.it/en/themes/immigration',
+    language: 'it',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['residence', 'Italy', 'immigration', 'asylum'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── PORTUGAL ──────────────────────────────────────────────
+  {
+    id: 'pt-aima',
+    country: 'Portugal',
+    countryFlag: '🇵🇹',
+    name: 'AIMA - Agência para a Integração, Migrações e Asilo',
+    url: 'https://aima.gov.pt/en/news',
+    language: 'pt',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Portugal', 'residence', 'migration', 'asylum'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── BULGARIA ──────────────────────────────────────────────
+  {
+    id: 'bg-mvr',
+    country: 'Bulgaria',
+    countryFlag: '🇧🇬',
+    name: 'MVR — Ministry of Interior Bulgaria',
+    url: 'https://www.mvr.bg/en',
+    language: 'bg',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Bulgaria', 'residence', 'registration', 'foreigners'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── TURKEY ────────────────────────────────────────────────
+  {
+    id: 'tr-goc',
+    country: 'Turkey',
+    countryFlag: '🇹🇷',
+    name: 'Göç İdaresi — Directorate General of Migration Management',
+    url: 'https://en.goc.gov.tr/',
+    language: 'tr',
+    targetLanguages: ['uk', 'ru', 'en'],
+    tags: ['Turkey', 'residence-permit', 'migration', 'foreigners'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
+
+  // ── ROMANIA ───────────────────────────────────────────────
+  {
+    id: 'ro-anofm',
+    country: 'Romania',
+    countryFlag: '🇷🇴',
+    name: 'ANOFM — National Employment Agency Romania',
+    url: 'https://www.anofm.ro/',
+    language: 'ro',
+    targetLanguages: ['uk', 'ru'],
+    tags: ['Romania', 'employment', 'work-permit', 'foreigners'],
+    checkIntervalHours: 48,
+    active: true,
+    type: 'scrape',
+  },
 ]
 
 export const RELEVANCE_KEYWORDS = [
