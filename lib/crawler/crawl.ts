@@ -580,5 +580,91 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
     })
   }
 
+  // ── Scrape sources via Python Scraper ─────────────────────
+  if (process.env.SCRAPER_SERVICE_URL) {
+    const scrapeSources = (sourceIds
+      ? allSources.filter(s => sourceIds.includes(s.id) && s.active)
+      : allSources.filter(s => s.active)
+    ).filter(s => s.type === 'scrape' && !s.rssUrl)
+
+    console.log(`[SCRAPER] Processing ${scrapeSources.length} scrape sources`)
+
+    for (const source of scrapeSources) {
+      let sc_found = 0
+      let sc_relevant = 0
+      try {
+        const content = await fetchViaPythonScraper(source.url)
+
+        if (!content || content.length < 300) {
+          console.warn(`[SCRAPER] ${source.id}: content too short, skipping`)
+        } else {
+          sc_found = 1
+          const existing = await getPrisma().crawledArticle.findFirst({
+            where: { OR: [{ url: source.url }, { originalTitle: source.name }] },
+            select: { id: true },
+          })
+
+          if (existing) {
+            console.log(`[SCRAPER] ${source.id}: already crawled, skipping`)
+          } else {
+            const rawArticle: RawArticle = {
+              sourceId: source.id,
+              url: source.url,
+              title: source.name,
+              content,
+              language: source.language,
+            }
+
+            const result = await processWithClaude(rawArticle, source)
+            processed++
+
+            if (result?.isRelevant) {
+              relevant++
+              sc_relevant++
+              console.log(`[SCRAPER] ${source.id}: RELEVANT "${result.originalTitle}" (score: ${result.relevanceScore})`)
+              await getPrisma().crawledArticle.create({
+                data: {
+                  sourceId: result.sourceId,
+                  url: result.url,
+                  originalTitle: result.originalTitle,
+                  originalContent: result.originalContent?.slice(0, 10000),
+                  originalLanguage: result.originalLanguage,
+                  titleUk: result.titleUk,
+                  titleRu: result.titleRu,
+                  summaryUk: result.summaryUk,
+                  summaryRu: result.summaryRu,
+                  fullTextUk: result.fullTextUk,
+                  fullTextRu: result.fullTextRu,
+                  tags: result.tags,
+                  relevanceScore: result.relevanceScore,
+                  country: result.country,
+                  status: result.status,
+                  publishedAt: new Date(),
+                },
+              })
+            } else {
+              console.log(`[SCRAPER] ${source.id}: rejected (score: ${result?.relevanceScore ?? 0})`)
+            }
+          }
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        errors.push(`${source.id}: ${message}`)
+        console.error(`[SCRAPER] ${source.id} error:`, message)
+      }
+
+      await getPrisma().crawlerLog.create({
+        data: {
+          sourceId: source.id,
+          status: errors.some(e => e.startsWith(source.id)) ? 'error' : 'success',
+          articlesFound: sc_found,
+          articlesRelevant: sc_relevant,
+        },
+      })
+
+      await new Promise(r => setTimeout(r, 2000))
+    }
+  }
+
   return { processed, relevant, errors }
 }
