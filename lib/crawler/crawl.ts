@@ -593,25 +593,52 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
       let sc_found = 0
       let sc_relevant = 0
       try {
-        const content = await fetchViaPythonScraper(source.url)
+        const pageContent = await fetchViaPythonScraper(source.url)
 
-        if (!content || content.length < 300) {
+        if (!pageContent || pageContent.length < 300) {
           console.warn(`[SCRAPER] ${source.id}: content too short, skipping`)
         } else {
-          sc_found = 1
-          const existing = await getPrisma().crawledArticle.findFirst({
-            where: { OR: [{ url: source.url }, { originalTitle: source.name }] },
-            select: { id: true },
+          // Use Haiku to extract individual news items from the page
+          const extractRes = await anthropic.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            messages: [{
+              role: 'user',
+              content: `This is a news/updates page from a government website. Extract a list of news items from this content. Return JSON array: [{"title": "...", "summary": "...", "url": "..."}] Maximum 5 most recent items. If no clear news items found, return []. Content:\n\n${pageContent.slice(0, 4000)}`,
+            }],
           })
 
-          if (existing) {
-            console.log(`[SCRAPER] ${source.id}: already crawled, skipping`)
-          } else {
+          const extractText = extractRes.content[0]?.type === 'text' ? extractRes.content[0].text : ''
+          let newsItems: { title: string; summary: string; url: string }[] = []
+          try {
+            const jsonMatch = extractText.match(/\[[\s\S]*\]/)
+            if (jsonMatch) newsItems = JSON.parse(jsonMatch[0])
+          } catch {
+            console.warn(`[SCRAPER] ${source.id}: Haiku JSON parse failed`)
+          }
+
+          console.log(`[SCRAPER] ${source.id}: Haiku extracted ${newsItems.length} news items`)
+          sc_found = newsItems.length
+
+          for (const item of newsItems) {
+            if (!item.title || !item.url) continue
+
+            const itemUrl = item.url.startsWith('http') ? item.url : `${new URL(source.url).origin}${item.url}`
+
+            const existing = await getPrisma().crawledArticle.findFirst({
+              where: { OR: [{ url: itemUrl }, { originalTitle: item.title }] },
+              select: { id: true },
+            })
+            if (existing) {
+              console.log(`[SCRAPER] ${source.id}: already crawled "${item.title}", skipping`)
+              continue
+            }
+
             const rawArticle: RawArticle = {
               sourceId: source.id,
-              url: source.url,
-              title: source.name,
-              content,
+              url: itemUrl,
+              title: item.title,
+              content: item.summary || item.title,
               language: source.language,
             }
 
@@ -643,7 +670,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
                 },
               })
             } else {
-              console.log(`[SCRAPER] ${source.id}: rejected (score: ${result?.relevanceScore ?? 0})`)
+              console.log(`[SCRAPER] ${source.id}: rejected "${item.title}" (score: ${result?.relevanceScore ?? 0})`)
             }
           }
         }
