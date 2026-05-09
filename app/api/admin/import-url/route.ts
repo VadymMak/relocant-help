@@ -66,53 +66,86 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let html: string
-  try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'relocant.help/1.0 (news aggregator for Ukrainian relocants)' },
-      signal: AbortSignal.timeout(20000),
-    })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    html = await res.text()
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    return NextResponse.json({ error: `Failed to fetch page: ${message}` }, { status: 422 })
-  }
+  // Level 0: Python scraper (best for geo-blocked sites)
+  let pythonContent = ''
+  const scraperUrl = process.env.SCRAPER_SERVICE_URL
+  const scraperSecret = process.env.SCRAPER_SECRET
 
-  const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? parsedUrl.hostname
-
-  // Try Jina AI Reader for cleaner content
-  let jinaContent = ''
-  try {
-    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
-      headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
-      signal: AbortSignal.timeout(15000),
-    })
-    if (!jinaRes.ok) throw new Error(`Jina: ${jinaRes.status}`)
-    const text = await jinaRes.text()
-    if (text.length > 200) jinaContent = text.slice(0, 12000)
-    else throw new Error('Too short')
-  } catch (err) {
-    console.warn('[import-url] Jina failed, trying article-extractor:', err)
+  if (scraperUrl && scraperSecret) {
     try {
-      const { extract } = await import('@extractus/article-extractor')
-      const article = await extract(url)
-      jinaContent = (article?.content || article?.description || '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 12000)
-    } catch (err2) {
-      console.warn('[import-url] article-extractor also failed:', err2)
+      const scraperRes = await fetch(`${scraperUrl}/scraper/scrape`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-scraper-secret': scraperSecret },
+        body: JSON.stringify({ url }),
+        signal: AbortSignal.timeout(20000),
+      })
+      if (scraperRes.ok) {
+        const scraperData = await scraperRes.json() as { success: boolean; content?: string }
+        if (scraperData.success && (scraperData.content?.length ?? 0) > 300) {
+          pythonContent = scraperData.content!
+          console.log(`[IMPORT] Python scraper: ${pythonContent.length} chars`)
+        }
+      }
+    } catch (e) {
+      console.warn('[IMPORT] Python scraper failed:', e)
     }
   }
 
-  // Raw HTML fallback
-  const rawContent = extractText(html)
+  let title: string
+  let content: string
 
-  // Take the longer result
-  const content = jinaContent.length > rawContent.length ? jinaContent : rawContent
-  console.log(`[import-url] contentLength=${content.length} (jina=${jinaContent.length}, raw=${rawContent.length})`)
+  if (pythonContent.length > 300) {
+    content = pythonContent.slice(0, 12000)
+    title = pythonContent.match(/^(?:Title:\s*)(.+)$/m)?.[1]?.trim() ?? parsedUrl.hostname
+    console.log(`[import-url] using Python scraper content: ${content.length} chars`)
+  } else {
+    // Level 1: direct fetch
+    let html: string
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'relocant.help/1.0 (news aggregator for Ukrainian relocants)' },
+        signal: AbortSignal.timeout(20000),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      html = await res.text()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return NextResponse.json({ error: `Failed to fetch page: ${message}` }, { status: 422 })
+    }
+
+    title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? parsedUrl.hostname
+
+    // Level 2: Jina AI Reader for cleaner content
+    let jinaContent = ''
+    try {
+      const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
+        headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!jinaRes.ok) throw new Error(`Jina: ${jinaRes.status}`)
+      const text = await jinaRes.text()
+      if (text.length > 200) jinaContent = text.slice(0, 12000)
+      else throw new Error('Too short')
+    } catch (err) {
+      console.warn('[import-url] Jina failed, trying article-extractor:', err)
+      try {
+        const { extract } = await import('@extractus/article-extractor')
+        const article = await extract(url)
+        jinaContent = (article?.content || article?.description || '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 12000)
+      } catch (err2) {
+        console.warn('[import-url] article-extractor also failed:', err2)
+      }
+    }
+
+    // Level 3: raw HTML fallback
+    const rawContent = extractText(html)
+    content = jinaContent.length > rawContent.length ? jinaContent : rawContent
+    console.log(`[import-url] contentLength=${content.length} (jina=${jinaContent.length}, raw=${rawContent.length})`)
+  }
 
   if (content.length < 50) {
     return NextResponse.json(
