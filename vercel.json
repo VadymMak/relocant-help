@@ -1,6 +1,11 @@
 {
   "regions": ["cdg1"],
-  "crons": [],
+  "crons": [
+    {
+      "path": "/api/cron/crawl",
+      "schedule": "0 7,19 * * *"
+    }
+  ],
   "functions": {
     "app/api/crawler/run/route.ts": {
       "maxDuration": 60

@@ -249,11 +249,11 @@ CONTENT (first 2000 chars): ${article.content.slice(0, 2000)}
 
 {"relevanceScore":number 0-100,"detectedCountry":"one of: Slovakia,Poland,Germany,Czech Republic,Spain,Italy,Romania,Bulgaria,Portugal,Austria,Netherlands,France,Belgium,Denmark,Norway,Sweden,Finland,United Kingdom,Turkey,Ukraine,Hungary,European Union","tags":["tag1","tag2"]}
 
-Score 80-100: directly about Ukrainians, TP status, residence permits, displaced persons.
-Score 50-79: work permits, social benefits, housing, integration, health, school, banking for migrants in EU.
-Score 20-49: general migration stats, EU policy debates, economic news affecting migrants.
-Score 0-19: domestic politics, sports, crime, culture with no migration angle.
-NOT relevant (score 0-15): other refugee groups (Syrian/Afghan/African), general EU politics, disasters unrelated to Ukrainian relocation.
+Score 80-100: directly about Ukrainians, temporary protection status, residence permits, displaced persons from Ukraine.
+Score 50-79: work permits, social benefits, housing, integration, health, school, banking for migrants/refugees in EU.
+Score 30-49: any article mentioning Ukraine, Ukrainians, refugees, or EU/national migration policy that could affect Ukrainian relocants.
+Score 0-29: domestic politics, sports, crime, culture with no migration or Ukraine angle.
+NOT relevant (score 0-15): news exclusively about other refugee groups (Syrian/Afghan/African) with no mention of Ukraine, pure domestic news unrelated to migration.
 Keywords: ${keywordsStr}`
 
   let score = 0
@@ -375,7 +375,7 @@ ${TRANSLATION_RULES}
       isRelevant: true,
       country,
       publishedAt: article.publishedAt,
-      status: score >= 50 ? 'pending_review' : 'rejected',
+      status: score >= 30 ? 'pending_review' : 'rejected',
     }
   } catch (e) {
     console.error('Translation step failed entirely:', e)
@@ -510,6 +510,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
   for (const source of rssSources) {
     let rs_found = 0
     let rs_relevant = 0
+    let sourceError: string | null = null
     try {
       let rawArticles = await fetchRSS(source.rssUrl!)
       const cutoff = new Date()
@@ -567,15 +568,18 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
+      sourceError = message
       errors.push(`${source.id}: ${message}`)
+      console.error(`[RSS] ${source.id} error:`, message)
     }
 
     await getPrisma().crawlerLog.create({
       data: {
         sourceId: source.id,
-        status: errors.some(e => e.startsWith(source.id)) ? 'error' : 'success',
+        status: sourceError ? 'error' : 'success',
         articlesFound: rs_found,
         articlesRelevant: rs_relevant,
+        error: sourceError ?? undefined,
       },
     })
   }
@@ -592,6 +596,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
     for (const source of scrapeSources) {
       let sc_found = 0
       let sc_relevant = 0
+      let scrapeError: string | null = null
       try {
         const pageContent = await fetchViaPythonScraper(source.url)
 
@@ -676,6 +681,7 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err)
+        scrapeError = message
         errors.push(`${source.id}: ${message}`)
         console.error(`[SCRAPER] ${source.id} error:`, message)
       }
@@ -683,9 +689,10 @@ export async function runCrawler(sourceIds?: string[]): Promise<{
       await getPrisma().crawlerLog.create({
         data: {
           sourceId: source.id,
-          status: errors.some(e => e.startsWith(source.id)) ? 'error' : 'success',
+          status: scrapeError ? 'error' : 'success',
           articlesFound: sc_found,
           articlesRelevant: sc_relevant,
+          error: scrapeError ?? undefined,
         },
       })
 
