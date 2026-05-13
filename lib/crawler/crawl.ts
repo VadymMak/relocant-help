@@ -240,7 +240,7 @@ export async function processWithClaude(
   }
 
   // ── Call 1: Haiku — filter only (cheap, runs for every article) ──
-  const filterPrompt = `You are a filter for a news aggregator for Ukrainian/Russian-speaking relocants in Europe.
+  const filterPrompt = `You are filtering news for Ukrainian relocants in Europe.
 Respond with ONLY valid JSON (no markdown, no explanation).
 
 SOURCE: ${source.name} (${countryHint})
@@ -249,11 +249,25 @@ CONTENT (first 2000 chars): ${article.content.slice(0, 2000)}
 
 {"relevanceScore":number 0-100,"detectedCountry":"one of: Slovakia,Poland,Germany,Czech Republic,Spain,Italy,Romania,Bulgaria,Portugal,Austria,Netherlands,France,Belgium,Denmark,Norway,Sweden,Finland,United Kingdom,Turkey,Ukraine,Hungary,European Union","tags":["tag1","tag2"]}
 
-Score 80-100: directly about Ukrainians, temporary protection status, residence permits, displaced persons from Ukraine.
-Score 50-79: work permits, social benefits, housing, integration, health, school, banking for migrants/refugees in EU.
-Score 30-49: any article mentioning Ukraine, Ukrainians, refugees, or EU/national migration policy that could affect Ukrainian relocants.
-Score 0-29: domestic politics, sports, crime, culture with no migration or Ukraine angle.
-NOT relevant (score 0-15): news exclusively about other refugee groups (Syrian/Afghan/African) with no mention of Ukraine, pure domestic news unrelated to migration.
+Score 70-100: Article DIRECTLY about:
+- Ukrainian refugees/relocants rights in Europe
+- Temporary protection status changes
+- Residence/work permits for Ukrainians
+- Social benefits for Ukrainian displaced persons
+- Official policy changes affecting Ukrainians in EU
+
+Score 30-69: Article INDIRECTLY relevant:
+- General EU migration policy that affects Ukrainians
+- Country-specific immigration law changes
+
+Score 0-29: NOT relevant:
+- General police/government news
+- Unrelated immigration (non-Ukrainian)
+- Crime, vehicles, helicopters, dogs, music
+- Anything not related to Ukrainian relocants
+
+IMPORTANT: Slovak Ministry of Interior news about police cars, helicopters, dogs = score 0.
+Only score high if article mentions Ukraine or Ukrainian nationals specifically.
 Keywords: ${keywordsStr}`
 
   let score = 0
@@ -284,7 +298,7 @@ Keywords: ${keywordsStr}`
   const country = detectedCountry || urlCountry || source.country
 
   // Stop here — irrelevant articles don't need translation
-  if (score < 30) {
+  if (score < 50) {
     return {
       sourceId: source.id,
       url: article.url,
@@ -375,7 +389,7 @@ ${TRANSLATION_RULES}
       isRelevant: true,
       country,
       publishedAt: article.publishedAt,
-      status: score >= 30 ? 'pending_review' : 'rejected',
+      status: score >= 50 ? 'pending_review' : 'rejected',
     }
   } catch (e) {
     console.error('Translation step failed entirely:', e)
