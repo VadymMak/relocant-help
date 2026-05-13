@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/crawl",
-      "schedule": "0 7,19 * * *"
+      "schedule": "0 8 * * *"
     }
   ],
   "functions": {
