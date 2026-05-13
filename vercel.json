@@ -9,6 +9,9 @@
   "functions": {
     "app/api/crawler/run/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/cron/crawl/route.ts": {
+      "maxDuration": 60
     }
   }
 }
